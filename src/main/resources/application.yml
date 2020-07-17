@@ -1,0 +1,36 @@
+server:
+  port: 8888
+netty:
+  port: 10011
+  host: 127.0.0.1
+spring:
+  redis:
+    host: 192.168.21.60
+    port: 6379
+    database: 2
+    timeout: 35
+  datasource:
+    url: jdbc:mysql://192.168.21.60:3306/robothost?useUnicode=true&characterEncoding=utf-8&useSSL=false
+    username: root
+    password: Aa123456.com
+    type: com.alibaba.druid.pool.DruidDataSource
+    driverClassName: com.mysql.jdbc.Driver
+    logSlowSql: true
+    # Druid StatViewServlet配置
+
+#SQL 打印
+#mybatis-plus:
+#  configuration:
+#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+#  mapper-locations: classpath*:mapper/**/*.xml
+
+ftpFlag: true
+
+ftpHost: 47.114.91.22
+ftpPort: 21
+ftpUsername: robotftps
+ftpPassword: robot123
+
+ftpPath: \robot\
+
+storeBasePath: E:\miracle\ftpFile\

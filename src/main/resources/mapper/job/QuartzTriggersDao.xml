@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.robot.host.quartz.dao.QuartzTriggersMapper">
+	
+	<select id="selectTriggerListByPage" resultType="com.robot.host.quartz.entry.QuartzTriggers" parameterType="com.robot.host.base.vo.PageVO">
+		select
+			rpt.patrol_task_name as 'patrolTaskName',
+			STR_TO_DATE(sj.cron_expression,'%s %i %H %d %m ? %y') as 'execTime',
+			rpt.priority as 'priority',
+			qt.trigger_state as 'triggerState',
+			sj.create_time as 'createTime'
+		FROM
+			robot_patrol_task rpt
+		LEFT JOIN schedule_job sj on rpt.patrol_task_id = json_extract(sj.params, '$.busiId')
+		LEFT JOIN QRTZ_TRIGGERS qt ON concat('TASK_', sj.job_id) = job_name
+		<where>
+			<if test="name != null and name != ''">
+				rpt.patrol_task_name like concat('%', #{name} , '%')
+			</if>
+			<if test="startTime != null and startTime.length > 0">
+				and STR_TO_DATE(sj.cron_expression,'%s %i %H %d %m ? %y') >= #{startTime[0], javaType=String}
+				and STR_TO_DATE(sj.cron_expression,'%s %i %H %d %m ? %y') &lt;= #{startTime[1], javaType=String}
+			</if>
+			<if test="state != null and state != ''">
+				<if test="state == 'COMPLETE'">
+					and qt.trigger_state is null or qt.trigger_state = #{state}
+				</if>
+				<if test="state != 'FINISH'">
+					and qt.trigger_state = #{state}
+				</if>
+
+			</if>
+		</where>
+	</select>
+
+	<select id="selectListAll" resultType="com.robot.host.quartz.entry.ScheduleJobEntity">
+		SELECT
+			rpt.patrol_task_name as 'patrolTaskName',
+			sj.*
+		FROM
+			schedule_job sj
+		INNER JOIN robot_patrol_task rpt ON json_extract(sj.params, '$.busiId')= rpt.patrol_task_id
+		INNER JOIN QRTZ_TRIGGERS qt ON concat('TASK_', sj.job_id) = job_name
+	</select>
+
+	<select id="selectJobByPatrolId" resultType="com.robot.host.quartz.entry.ScheduleJobEntity">
+		select * from schedule_job where json_extract(params, '$.busiId') = #{patrolTaskId}
+	</select>
+
+</mapper>

@@ -12,4 +12,13 @@ public interface ITask {
      * @param params   参数，多参数使用JSON数据
      */
     void run(String params);
+
+    /**
+     * 添加任务执行日志
+     * @param robotId
+     * @param taskId
+     * @param logContent
+     */
+    void saveOperationLog(Long robotId, Long taskId, String logContent, String deviceId, String taskCode);
+
 }

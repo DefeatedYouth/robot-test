@@ -23,12 +23,10 @@ public class MessageUtil {
     /**
      * 状态数据封装
      */
-    public static void statusDataMessage(String robotCode, EnumRobotComplusStatusDataType status, String value, String unit){
+    public static void statusDataMessage(String robotCode, EnumRobotComplusStatusDataType status){
         StatusDataDTO statusDataDTO = new StatusDataDTO();
         statusDataDTO.setRobotCode(robotCode);
         statusDataDTO.setStatusDataType(status);
-        statusDataDTO.setStatusValue(value);
-        statusDataDTO.setStatusUnit(unit);
         String statusDataMsg = JSONUtil.toJsonStr(statusDataDTO);
         MessageAboutRobotDTO messageAboutRobotDTO = new MessageAboutRobotDTO();
         messageAboutRobotDTO.setMsgType(EnumSendToRobotMsgType.STATUS_DATA);

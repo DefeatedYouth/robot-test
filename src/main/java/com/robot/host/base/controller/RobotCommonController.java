@@ -2,7 +2,12 @@ package com.robot.host.base.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.robot.host.base.entry.RobotInfoEntity;
+import com.robot.host.base.entry.SysConfig;
 import com.robot.host.base.entry.WeatherInfoEntry;
+import com.robot.host.base.service.SysConfigService;
+import com.robot.host.common.constants.EnumRobotComplusStatusDataType;
+import com.robot.host.common.util.MessageUtil;
+import com.robot.host.common.util.ResultUtil;
 import com.robot.host.quartz.entry.QuartzTriggers;
 import com.robot.host.quartz.service.QuartzTriggersService;
 import com.robot.host.base.service.RobotCommonService;
@@ -12,6 +17,7 @@ import com.robot.host.base.vo.PageVO;
 import com.robot.host.base.vo.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.testng.collections.Lists;
 
 import java.util.List;
 
@@ -31,6 +37,9 @@ public class RobotCommonController {
     @Autowired
     private QuartzTriggersService quartzTriggersService;
 
+    @Autowired
+    private SysConfigService sysConfigService;
+
 
     /**
      * 发送异常告警数据
@@ -38,43 +47,50 @@ public class RobotCommonController {
      * @param content
      * @return
      */
-    @PostMapping("/abormal/warn")
-    public Object abormalWarnMessage(@RequestParam("robotCode") String robotCode, @RequestParam("content") String content){
+    @PostMapping("/abormal/warn/{robotCode}/{content}")
+    public Object abormalWarnMessage(@PathVariable("robotCode") String robotCode, @PathVariable("content") String content){
         robotCommonService.sendAbormalWarnMessage(robotCode,content);
         return new Result<>().setSuccessMsg("发送异常告警数据成功");
     }
 
-    /**
-     * 获取机器人列表
-     * @return
-     */
-    @GetMapping("/robot/listAll")
-    public Result<List<RobotInfoEntity>> selectRobotList(){
-        List<RobotInfoEntity> robotInfoList = robotInfoService.list();
-        return new Result<List<RobotInfoEntity>>().setData(robotInfoList,"机器人信息查询成功");
-    }
 
 
     /**
-     * 查询任务列表
-     * @return
+     * 状态数据列表
      */
-    @PostMapping("/task/listByPage")
-    public Result<List<QuartzTriggers>> selectListByPage(@RequestBody PageVO pageVO){
-//        List<QuartzTriggers> schedulerList = quartzTriggersService.list(new QueryWrapper<QuartzTriggers>().lambda().);
-        Page<QuartzTriggers> quartzTriggersPage = quartzTriggersService.page(new Page<QuartzTriggers>(pageVO.getPageNumber(), pageVO.getPageSize()));
-
-        return new Result<List<QuartzTriggers>>().setData(quartzTriggersPage.getRecords(),"任务查询成功");
+    @GetMapping("/statusData/list")
+    public Result<List<EnumRobotComplusStatusDataType>> statusDataList(){
+        EnumRobotComplusStatusDataType[] statusDataTypes = robotCommonService.statusDataList();
+        return ResultUtil.data(Lists.newArrayList(statusDataTypes),"StatusData: 成功获取状态数据");
     }
-
 
     /**
-     * 查询微气象数据
-     * @return
+     *状态数据响应
      */
-    @GetMapping("/weather/listAll")
-    public Result<List<WeatherInfoEntry>> selectWeatherList(){
-        List<WeatherInfoEntry> weatherList = weatherInfoService.list();
-        return new Result<List<WeatherInfoEntry>>().setData(weatherList,"微气象数据查询成功");
+    @PostMapping("/statusData/send/{robotCode}/{fullCode}")
+    public Result sendStatusData(@PathVariable("robotCode") String robotCode, @PathVariable("fullCode") String fullCode){
+        EnumRobotComplusStatusDataType statusDataType = EnumRobotComplusStatusDataType.getEnum(fullCode);
+        MessageUtil.statusDataMessage(robotCode,statusDataType);
+        return ResultUtil.success("StatusData: 响应数据发送成功");
     }
+
+
+    @GetMapping("/sysConfig/list")
+    public Result<List<SysConfig>> sysConfigList(){
+        List<SysConfig> list = sysConfigService.sysConfigList();
+        return ResultUtil.data(list);
+    }
+
+    @PutMapping("/sysConfig/update")
+    public Result<SysConfig> updateSysConfig(@RequestBody SysConfig sysConfig){
+        StringBuilder returnMessage = new StringBuilder();
+        sysConfigService.updateSysConfig(sysConfig, returnMessage);
+        if(returnMessage.length() > 0){
+            return  ResultUtil.error(returnMessage.toString());
+        }
+        return ResultUtil.success("系统配置信息修改成功");
+    }
+
+
+
 }

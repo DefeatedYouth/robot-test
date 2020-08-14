@@ -11,6 +11,28 @@ public interface NettyConstants {
     int RESPONSE_CODE_SUCCESS = 200;
     int RESPONSE_CODE_ERROR = 500;
 
+    /**
+     * 机器人主机操作日志
+     */
+    int ROBOT_OPERATION = 1;//机器人控制
+
+    int PATROL_TASK = 2;//巡检任务
+    /**
+     * 机器人状态
+     */
+    int ROBOT_FREE = 1;
+    int ROBOT_PATROL = 2;
+    int ROBOT_CHARGE = 3;
+    int ROBOT_FAULT = 4;
+
+    /**
+     * 联动任务响应code
+     */
+    int TASK_LINK_SUCCESS = 0;
+    int TASK_LINK_ROBOT_FAULT = 1;
+    int TASK_LINK_NO_PERMISSION = 2;
+    int TASK_LINK_OTHER_ERROR = 3;
+
 
     String PATROL_HOST_CODE = "Server01";//巡视主机
     String MASTER_HOST_CODE = "Master001";//主站主机

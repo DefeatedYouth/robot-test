@@ -1,7 +1,9 @@
 package com.robot.host.netty.resolver.out;
 
+import com.robot.host.base.service.OperationLogService;
 import com.robot.host.common.constants.NettyConstants;
 import com.robot.host.common.constants.ProtocolMessage;
+import com.robot.host.common.constants.SysLogConstant;
 import com.robot.host.common.dto.MessageAboutRobotDTO;
 import com.robot.host.common.util.SessionSocketHolder;
 import io.netty.channel.ChannelFuture;
@@ -22,7 +24,10 @@ public abstract class CommonOutResolver implements OutResolver {
 
     public static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-    protected CommonOutResolver() {
+    private OperationLogService operationLogService;
+
+    protected CommonOutResolver(OperationLogService operationLogService) {
+        this.operationLogService = operationLogService;
     }
 
     public abstract boolean support(MessageAboutRobotDTO outDTO);
@@ -36,6 +41,11 @@ public abstract class CommonOutResolver implements OutResolver {
             return;
         }
         ProtocolMessage protocol = concreteResolve(busiMessage);
+        //发送消息日志
+        operationLogService.saveSysLogThenSendWebSocket(SysLogConstant.ROBOT_OTHER,
+                SysLogConstant.SYS_OUTPUT_STATUS,
+                String.format(SysLogConstant.IN_OUTPUT_MESSAGE, operationName(), protocol.getBody()),
+                null, null, null, className());
         ChannelFuture future = socketChannel.writeAndFlush(protocol);
         future.addListener((ChannelFutureListener) channelFuture ->
                 log.info("【巡视主机业务】主动发送消息{}，处理完成", busiMessage));

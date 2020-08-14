@@ -3,6 +3,7 @@ package com.robot.host.netty.resolver.out;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.robot.host.base.entry.RobotInfoEntity;
+import com.robot.host.base.service.OperationLogService;
 import com.robot.host.base.service.RobotInfoService;
 import com.robot.host.common.constants.EnumSendToRobotMsgType;
 import com.robot.host.common.constants.NettyConstants;
@@ -21,9 +22,12 @@ public class StatusDataMessageOutResolver extends CommonOutResolver {
 
 
     private RobotInfoService robotInfoService;
+    private OperationLogService operationLogService;
 
-    public StatusDataMessageOutResolver(RobotInfoService robotInfoService) {
+    public StatusDataMessageOutResolver(RobotInfoService robotInfoService, OperationLogService operationLogService) {
+        super(operationLogService);
         this.robotInfoService = robotInfoService;
+        this.operationLogService = operationLogService;
     }
 
     @Override
@@ -33,6 +37,16 @@ public class StatusDataMessageOutResolver extends CommonOutResolver {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public String operationName() {
+        return "状态数据";
+    }
+
+    @Override
+    public String className() {
+        return this.getClass().getCanonicalName();
     }
 
     @Override
@@ -52,10 +66,11 @@ public class StatusDataMessageOutResolver extends CommonOutResolver {
         item.setRobotCode(robotInfo.getCode());
         item.setRobotName(robotInfo.getName());
         item.setTime(new Date().toString());
-        item.setType(statusDataDTO.getStatusDataType().getFullCode());
-        item.setValue(statusDataDTO.getStatusValue());
-        item.setValueUnit(statusDataDTO.getStatusValue() + statusDataDTO.getStatusUnit());
-        item.setUnit(statusDataDTO.getStatusUnit());
+        item.setType(statusDataDTO.getStatusDataType().getType() + "");
+        item.setValue(statusDataDTO.getStatusDataType().getValue() + "");
+        //TODO  状态数据  单位  + 值带单位
+        item.setValueUnit("");
+        item.setUnit("");
         List<XmlOutRobotPushCommonDTO.Item> items = Lists.newArrayList(item);
         statusDataVO.setItems(items);
 

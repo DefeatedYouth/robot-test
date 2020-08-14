@@ -1,7 +1,7 @@
 server:
   port: 8888
 netty:
-  port: 10011
+  port: 10012
   host: 127.0.0.1
 spring:
   redis:
@@ -19,18 +19,14 @@ spring:
     # Druid StatViewServlet配置
 
 #SQL 打印
-#mybatis-plus:
-#  configuration:
-#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-#  mapper-locations: classpath*:mapper/**/*.xml
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  mapper-locations: classpath*:mapper/**/*.xml
 
-ftpFlag: true
 
-ftpHost: 47.114.91.22
+#ftp连接信息
+ftpHost: 192.168.101.226
 ftpPort: 21
-ftpUsername: robotftps
-ftpPassword: robot123
-
-ftpPath: \robot\
-
-storeBasePath: E:\miracle\ftpFile\
+ftpUsername: IntoRobot
+ftpPassword: Aa123456

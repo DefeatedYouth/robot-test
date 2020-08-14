@@ -8,4 +8,8 @@ public interface OutResolver {
     boolean support(MessageAboutRobotDTO outDTO);
 
     void resolve(MessageAboutRobotDTO message);
+
+    String operationName();
+
+    String className();
 }

@@ -9,5 +9,5 @@ import lombok.Data;
 @Data
 public class PatrolTaskResultDTO {
 
-    private String taskCode;
+    private Long taskResultId;
 }

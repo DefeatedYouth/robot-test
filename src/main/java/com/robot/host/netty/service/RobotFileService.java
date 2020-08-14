@@ -1,14 +1,19 @@
 package com.robot.host.netty.service;
 
+import com.robot.host.base.service.OperationLogService;
+import com.robot.host.common.constants.EnumSysConfigType;
+import com.robot.host.common.constants.SysLogConstant;
 import com.robot.host.common.dto.RobotSynModelXmlDTO;
 import com.robot.host.common.dto.RobotSynRobotModelXmlDTO;
 import com.robot.host.base.entry.DeviceInfoEntry;
 import com.robot.host.base.entry.RobotInfoEntity;
 import com.robot.host.base.service.DeviceInfoService;
 import com.robot.host.base.service.RobotInfoService;
-import com.robot.host.common.util.FtpPatrolUtils;
+import com.robot.host.common.util.FTPRobotUtils;
+import com.robot.host.common.util.SysConfigUtil;
 import com.robot.host.common.util.XmlBeanUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -21,13 +26,6 @@ import java.util.List;
 @Slf4j
 public class RobotFileService {
 
-    /**
-     * 文件名     .xml
-     */
-    private String robotFileName = "robotModel.xml";
-
-    private String deviceFileName = "deviceModel.xml";
-
     @Autowired
     private RobotInfoService robotInfoService;
 
@@ -35,16 +33,10 @@ public class RobotFileService {
     private DeviceInfoService deviceInfoService;
 
     @Autowired
-    private FtpPatrolUtils ftpUtils;
+    private FTPRobotUtils ftpUtils;
 
-    @Value("${ftpFlag}")
-    private Boolean ftpFlag;
-
-    @Value("${storeBasePath}")
-    private String storeBasePath;
-
-    @Value("${ftpPath}")
-    private String ftpPath;
+    @Autowired
+    private OperationLogService operationLogService;
 
 
     /**
@@ -52,7 +44,7 @@ public class RobotFileService {
      * @return  设备文件路径
      */
     public String uploadDeviceFile(){
-        String deviceFile = "";
+        String deviceFile = SysConfigUtil.get(EnumSysConfigType.DeviceFile.getName());
         OutputStream out = null;
         InputStream in = null;
         try {
@@ -78,22 +70,17 @@ public class RobotFileService {
             });
             modelVO.setModelList(models);
             String modelMsg = XmlBeanUtils.beanToXml(modelVO, RobotSynModelXmlDTO.class);
-            if(!ftpFlag){
-                deviceFile = storeBasePath + deviceFileName;
-                out = new FileOutputStream(new File(deviceFile));
-                out.write(modelMsg.getBytes(),0,modelMsg.getBytes().length);
-            }else{
-                deviceFile = ftpPath + deviceFileName;
-                in = new ByteArrayInputStream(modelMsg.getBytes());
-                ftpUtils.uploadFile(ftpPath,deviceFileName,in);
-            }
+            int lastSlash = StringUtils.lastIndexOf(deviceFile, "/");
+            String pathName = StringUtils.substring(deviceFile, 0, lastSlash);
+            String fileName = StringUtils.substring(deviceFile, lastSlash + 1, deviceFile.length());
+            in = new ByteArrayInputStream(modelMsg.getBytes());
+            ftpUtils.uploadFile(pathName,fileName,in);
 
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            log.info("文件未找到");
-        } catch (IOException e) {
-            e.printStackTrace();
-            log.info("文件生成失败");
+            operationLogService.saveSysLogThenSendWebSocket(SysLogConstant.ROBOT_OTHER,
+                    SysLogConstant.SYS_LOCAL_STATUS,
+                    "[模型同步]生成设备文件",
+                    null,null,null, this.getClass().getCanonicalName());
+
         } finally {
             try {
                 if(out != null){
@@ -115,7 +102,7 @@ public class RobotFileService {
      * @return
      */
     public String uploadRobotFile(){
-        String robotFile = "";
+        String robotFile = SysConfigUtil.get(EnumSysConfigType.RobotFile.getName());
         OutputStream out = null;
         InputStream in = null;
         try {
@@ -135,21 +122,16 @@ public class RobotFileService {
             });
             robotModelVO.setModelList(models);
             String robotSynMsg = XmlBeanUtils.beanToXml(robotModelVO, RobotSynRobotModelXmlDTO.class);
-            if(!ftpFlag){
-                robotFile = storeBasePath + "robotModel.xml";
-                out = new FileOutputStream(new File(robotFile));
-                out.write(robotSynMsg.getBytes(),0,robotSynMsg.getBytes().length);
-            }else{
-                robotFile = ftpPath + "robotModel.xml";
-                in = new ByteArrayInputStream(robotSynMsg.getBytes());
-                ftpUtils.uploadFile(ftpPath,"robotModle.xml",in);
-            }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            log.info("文件未找到");
-        } catch (IOException e) {
-            e.printStackTrace();
-            log.info("文件生成失败");
+            int lastSlash = StringUtils.lastIndexOf(robotFile, "/");
+            String pathName = StringUtils.substring(robotFile, 0, lastSlash);
+            String fileName = StringUtils.substring(robotFile, lastSlash + 1, robotFile.length());
+            in = new ByteArrayInputStream(robotSynMsg.getBytes());
+            ftpUtils.uploadFile(pathName, fileName, in);
+
+            operationLogService.saveSysLogThenSendWebSocket(SysLogConstant.ROBOT_OTHER,
+                    SysLogConstant.SYS_LOCAL_STATUS,
+                    "[模型同步]生成设备文件",
+                    null,null,null, this.getClass().getCanonicalName());
         }finally {
             try {
                 if(out != null){

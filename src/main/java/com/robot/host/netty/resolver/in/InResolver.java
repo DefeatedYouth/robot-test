@@ -8,4 +8,9 @@ public interface InResolver {
     boolean support(MessageJudgeInDTO judgeInDTO);
 
     ProtocolMessage resolve(ProtocolMessage message, ChannelHandlerContext ctx);
+
+
+    String operationName();
+
+    String className();
 }

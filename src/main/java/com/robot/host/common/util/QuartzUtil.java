@@ -3,6 +3,7 @@ package com.robot.host.common.util;
 import cn.hutool.core.date.DateUtil;
 import com.robot.host.common.constants.EnumTaskPeriodType;
 import com.robot.host.common.constants.SmartConstants;
+import org.quartz.CronExpression;
 
 public class QuartzUtil {
 
@@ -83,5 +84,41 @@ public class QuartzUtil {
             return null;
         }
         return cron;
+    }
+
+
+    public static final String CRON_FORMAT = "*/%s";
+
+    /**
+     * 时分秒
+     * @param seconds
+     * @return
+     */
+    public static String getCronBySeconds(Long seconds){
+        String[] crons = new String[]{
+                "*",
+                "*",
+                "*",
+                "*",
+                "*",
+                "?",
+        };
+        if (seconds < 60){
+            crons[0] = String.format(CRON_FORMAT, seconds);
+        }else{
+            long minutes = seconds / 60;
+            if(minutes < 60){
+                crons[0] = String.valueOf(seconds % 60);
+                crons[1] = String.format(CRON_FORMAT, minutes);
+            }else{
+                long hours = minutes / 60;
+                if(hours < 24){
+                    crons[0] = String.valueOf(seconds % 60);
+                    crons[1] = String.valueOf(minutes % 60);
+                    crons[2] = String.format(CRON_FORMAT, hours);
+                }
+            }
+        }
+        return String.join(SmartConstants.CRON_SPACE, crons);
     }
 }

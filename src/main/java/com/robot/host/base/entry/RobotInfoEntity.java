@@ -65,47 +65,16 @@ public class RobotInfoEntity implements Serializable {
     @ApiModelProperty(value = "电量", dataType = "String")
     private String quantity;
 
-    /**
-     * 变电站id
-     */
 
-    @ApiModelProperty(value = "实时信息", dataType = "String")
-    private String jsonStr;
-
-    /**
-     * 变电站id
-     */
 
     @ApiModelProperty(value = "当前机器人在地图上的X坐标", dataType = "String")
     private String posX;
 
-    /**
-     * 变电站id
-     */
 
     @ApiModelProperty(value = "当前机器人在地图上的Y坐标", dataType = "String")
     private String posY;
-    @ApiModelProperty(value = "图片宽度", dataType = "String")
-    private String spacePicWidth;
-    @ApiModelProperty(value = "图片高度", dataType = "String")
-    private String spacePicHeight;
-
-    @ApiModelProperty(value = "变电站室内平面地图图片", dataType = "String")
-    private String spacePic;
 
 
-    /**
-     * 变电站id
-     */
-
-    @ApiModelProperty(value = "变电站id", dataType = "Long")
-    private Long siteId;
-    /**
-     * 创建人
-     */
-
-    @ApiModelProperty(value = "创建人", dataType = "String")
-    private String createUser;
     /**
      * 创建时间
      */
@@ -126,14 +95,34 @@ public class RobotInfoEntity implements Serializable {
     private String latitude;
 
 
+    /**
+     * 生产厂家
+     */
+    @ApiModelProperty(value = "生产厂家", dataType = "String")
     private String manufacturer;
 
+    /**
+     * 是否轮转
+     */
+    @ApiModelProperty(value = "是否轮转", dataType = "Integer")
     private Integer istransport;
 
+    /**
+     * 机器人类型
+     */
+    @ApiModelProperty(value = "机器人类型", dataType = "Integer")
     private Integer type;
 
+    /**
+     * 地图上送路径
+     */
+    @ApiModelProperty(value = "地图上送路径", dataType = "String")
     private String mappath;
 
+    /**
+     * 备注信息
+     */
+    @ApiModelProperty(value = "备注信息", dataType = "String")
     private String robotInfo;
 
 

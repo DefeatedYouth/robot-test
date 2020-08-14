@@ -5,23 +5,29 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.robot.host.base.entry.RobotInfoEntity;
 import com.robot.host.base.mapper.RobotInfoMapper;
+import com.robot.host.base.service.OperationLogService;
 import com.robot.host.base.service.RobotInfoService;
 import com.robot.host.common.constants.EnumRobotOperationType;
 import com.robot.host.common.constants.EnumSendToRobotMsgType;
+import com.robot.host.common.constants.EnumSysConfigType;
+import com.robot.host.common.constants.SysLogConstant;
 import com.robot.host.common.dto.CoordinateDTO;
 import com.robot.host.common.dto.MessageAboutRobotDTO;
 import com.robot.host.common.util.MessageUtil;
+import com.robot.host.common.util.SysConfigUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service("robotInfoService")
 @Slf4j
 public class RobotInfoServiceImpl extends ServiceImpl<RobotInfoMapper, RobotInfoEntity> implements RobotInfoService {
 
-    //单位长度
-    private Integer unitLength = 50;
-
-
+    @Autowired
+    private OperationLogService operationLogService;
 
     /**
      * 修改坐标
@@ -30,6 +36,9 @@ public class RobotInfoServiceImpl extends ServiceImpl<RobotInfoMapper, RobotInfo
      */
     @Override
     public void updateCoordinate(String robotCode, EnumRobotOperationType operationType) {
+        //获取单位长度
+        Long unitLength = Long.valueOf(SysConfigUtil.get(EnumSysConfigType.CoordinateUnitLength.getName()));
+
         RobotInfoEntity robotInfo = this.getOne(new QueryWrapper<RobotInfoEntity>().lambda().eq(RobotInfoEntity::getCode, robotCode));
         Integer posX = Integer.valueOf(robotInfo.getPosX());
         Integer posy = Integer.valueOf(robotInfo.getPosY());
@@ -46,15 +55,14 @@ public class RobotInfoServiceImpl extends ServiceImpl<RobotInfoMapper, RobotInfo
             case youzhuan:
                 robotInfo.setPosY(String.valueOf(posy + unitLength));
                 break;
-            case yijianfanhang:
-                robotInfo.setPosX("0");
-                robotInfo.setPosY("0");
-                break;
+//            case yijianfanhang:
+//                robotInfo.setPosX("0");
+//                robotInfo.setPosY("0");
+//                break;
             default:
-//                log.info("操作有误，操作指令:{}",operationType);
-                return;
+                break;
         }
-        this.saveOrUpdate(robotInfo);
+        this.updateCoordinateThenSendWebSocket(robotInfo);
         //坐标更改，返回实时坐标信息
         MessageAboutRobotDTO sendMsgCoordinateVO = new MessageAboutRobotDTO();
         sendMsgCoordinateVO.setMsgType(EnumSendToRobotMsgType.COORDINATE_DATA);
@@ -77,7 +85,7 @@ public class RobotInfoServiceImpl extends ServiceImpl<RobotInfoMapper, RobotInfo
         RobotInfoEntity robotInfo = this.getOne(new QueryWrapper<RobotInfoEntity>().lambda().eq(RobotInfoEntity::getCode, robotCode));
         robotInfo.setPosX(posX);
         robotInfo.setPosY(posY);
-        this.saveOrUpdate(robotInfo);
+        this.updateCoordinateThenSendWebSocket(robotInfo);
         //坐标更改，返回实时坐标信息
         MessageAboutRobotDTO sendMsgCoordinateVO = new MessageAboutRobotDTO();
         sendMsgCoordinateVO.setMsgType(EnumSendToRobotMsgType.COORDINATE_DATA);
@@ -88,5 +96,17 @@ public class RobotInfoServiceImpl extends ServiceImpl<RobotInfoMapper, RobotInfo
         String coordinateMsg = JSONUtil.toJsonStr(sendMsgCoordinateVO);
         MessageUtil.sendMessage(coordinateMsg);
 
+    }
+
+    /**
+     * 保存机器人坐标信息，添加操作日志
+     * @param robotInfo
+     */
+    private void updateCoordinateThenSendWebSocket(RobotInfoEntity robotInfo) {
+        this.saveOrUpdate(robotInfo);
+        operationLogService.saveSysLogThenSendWebSocket(SysLogConstant.ROBOT_ROBOT_OPERATION,
+                SysLogConstant.SYS_LOCAL_STATUS,
+                String.format(SysLogConstant.ROBOT_OPERATION_COORDINATE, robotInfo.getCode(), robotInfo.getPosX(), robotInfo.getPosY()),
+                robotInfo.getRobotInfoId(), null, null, this.getClass().getCanonicalName());
     }
 }

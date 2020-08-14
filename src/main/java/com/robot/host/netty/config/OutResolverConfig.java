@@ -33,20 +33,22 @@ public class OutResolverConfig {
     @Autowired
     private DeviceInfoService deviceInfoService;
 
-    @PostConstruct
+    @Autowired
+    private OperationLogService operationLogService;
+
     public void init(){
         initRosolverFactory(resolverFactory);
     }
 
 
     public void initRosolverFactory(MessageResolverOutFactory resolverFactory) {
-        resolverFactory.registerResolver(new RunDataMessageOutResolver());
-        resolverFactory.registerResolver(new WeatherDataMessageOutResolver());
-        resolverFactory.registerResolver(new CoordinateOutResolver(robotInfoService));
-        resolverFactory.registerResolver(new AbormalWarnOutResolver());
-        resolverFactory.registerResolver(new PatralTaskStatusOutResolver(patrolTaskService,patrolTaskExecService));
-        resolverFactory.registerResolver(new StatusDataMessageOutResolver(robotInfoService));
-        resolverFactory.registerResolver(new PatrolRouteOutResolver(sceneInfoService,robotInfoService,deviceInfoService));
-        resolverFactory.registerResolver(new PatrolResultMessageOutResolver(patrolTaskResultService));
+        resolverFactory.registerResolver(new RunDataMessageOutResolver(operationLogService));
+        resolverFactory.registerResolver(new WeatherDataMessageOutResolver(operationLogService));
+        resolverFactory.registerResolver(new CoordinateOutResolver(robotInfoService, operationLogService));
+        resolverFactory.registerResolver(new AbormalWarnOutResolver(operationLogService));
+        resolverFactory.registerResolver(new PatralTaskStatusOutResolver(patrolTaskService,patrolTaskExecService, operationLogService));
+        resolverFactory.registerResolver(new StatusDataMessageOutResolver(robotInfoService, operationLogService));
+        resolverFactory.registerResolver(new PatrolRouteOutResolver(sceneInfoService,robotInfoService,deviceInfoService, operationLogService));
+        resolverFactory.registerResolver(new PatrolResultMessageOutResolver(patrolTaskResultService, operationLogService));
     }
 }

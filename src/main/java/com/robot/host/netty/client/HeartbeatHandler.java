@@ -1,9 +1,15 @@
 package com.robot.host.netty.client;
 
+import com.robot.host.base.entry.SysConfig;
+import com.robot.host.base.service.OperationLogService;
+import com.robot.host.base.service.SysConfigService;
+import com.robot.host.common.constants.EnumSysConfigType;
 import com.robot.host.common.constants.NettyConstants;
 import com.robot.host.common.constants.ProtocolMessage;
+import com.robot.host.common.constants.SysLogConstant;
 import com.robot.host.common.dto.RegisterInXmlDTO;
 import com.robot.host.common.dto.XmlOutRegisterDTO;
+import com.robot.host.common.util.SysConfigUtil;
 import com.robot.host.netty.protocol.MessageBase;
 import com.robot.host.common.util.RedisTemplateHelper;
 import com.robot.host.common.util.XmlBeanUtils;
@@ -15,6 +21,9 @@ import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 import lombok.extern.slf4j.Slf4j;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -24,31 +33,27 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
-    private final NettyClient nettyClient;
-
-    public HeartbeatHandler(NettyClient nettyClient, RedisTemplateHelper redisTemplateHelper) {
-        this.nettyClient = nettyClient;
-        this.redisTemplateHelper = redisTemplateHelper;
-    }
 
     private Channel channel;
 
-    private RedisTemplateHelper redisTemplateHelper;
+    private final NettyClient nettyClient;
+
+    private OperationLogService operationLogService;
+
+    public HeartbeatHandler(NettyClient nettyClient, OperationLogService operationLogService) {
+        this.nettyClient = nettyClient;
+        this.operationLogService = operationLogService;
+    }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
         this.channel = ctx.channel();
-
         ping(ctx.channel());
     }
 
     private void ping(Channel channel) {
-        String secondStr = redisTemplateHelper.get(NettyConstants.REDIS_HEART_BEAT_SECOND_KEY, "");
-        int second = 10;
-        if (secondStr != null) {
-            second = Integer.valueOf(secondStr);
-        }
+        Long second = Long.valueOf(SysConfigUtil.get(EnumSysConfigType.Heart.getName()));
         log.info("【主站与巡视主机通讯】next heart beat will send after " + second + "s.");
         ScheduledFuture<?> future = channel.eventLoop().schedule(new Runnable() {
             @Override
@@ -85,7 +90,10 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
         ProtocolMessage protocolMessage = new ProtocolMessage();
         String responseBodyStr = XmlBeanUtils.beanToXml(registerXmlDTO, XmlOutRegisterDTO.class);
         protocolMessage.setBody(responseBodyStr);
-//        long sessionId = robotLogService.saveMasterLog("巡视主机发送心跳", null, "机器人操控请求", EnumRobotLogType.patrol_robot_request);
+        operationLogService.saveSysLogThenSendWebSocket(SysLogConstant.ROBOT_OTHER,
+                SysLogConstant.SYS_OUTPUT_STATUS,
+                String.format(SysLogConstant.IN_OUTPUT_MESSAGE, "心跳", responseBodyStr),
+                null, null, null, this.getClass().getCanonicalName());
         protocolMessage.setSessionId(0);
         return protocolMessage;
 
@@ -94,6 +102,7 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        System.err.println("进入心跳超时");
         if (evt instanceof IdleStateEvent) {
             IdleStateEvent idleStateEvent = (IdleStateEvent) evt;
             if (idleStateEvent.state() == IdleState.WRITER_IDLE) {

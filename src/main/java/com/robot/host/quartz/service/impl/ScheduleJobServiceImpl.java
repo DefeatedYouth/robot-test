@@ -10,6 +10,9 @@ package com.robot.host.quartz.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.robot.host.common.constants.Constant;
+import com.robot.host.common.constants.EnumSysConfigType;
+import com.robot.host.common.util.QuartzUtil;
+import com.robot.host.common.util.SysConfigUtil;
 import com.robot.host.quartz.dao.ScheduleJobDao;
 import com.robot.host.quartz.entry.ScheduleJobEntity;
 import com.robot.host.quartz.service.ScheduleJobService;
@@ -17,25 +20,55 @@ import com.robot.host.quartz.util.ScheduleUtils;
 import org.quartz.CronTrigger;
 import org.quartz.Scheduler;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.testng.collections.Lists;
 
 import javax.annotation.PostConstruct;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 @Service("scheduleJobService")
 public class ScheduleJobServiceImpl extends ServiceImpl<ScheduleJobDao, ScheduleJobEntity> implements ScheduleJobService {
 	@Autowired
     private Scheduler scheduler;
+
+	@Autowired
+	private ScheduleJobService scheduleJobService;
 	
 	/**
 	 * 项目启动时，初始化定时器
 	 */
-	@PostConstruct
 	public void init(){
 		List<ScheduleJobEntity> scheduleJobList = this.list();
 		for(ScheduleJobEntity scheduleJob : scheduleJobList){
+			//设置运行数据和微气象的间隔
+			switch (scheduleJob.getBeanName()){
+				case "runDataTask":
+					scheduleJob.setCronExpression(QuartzUtil.getCronBySeconds(Long.valueOf(SysConfigUtil.get(EnumSysConfigType.RunData.getName()))));
+					scheduleJobService.saveOrUpdate(scheduleJob);
+					break;
+				case "weatherDataTask":
+					scheduleJob.setCronExpression(QuartzUtil.getCronBySeconds(Long.valueOf(SysConfigUtil.get(EnumSysConfigType.WeatherData.getName()))));
+					scheduleJobService.saveOrUpdate(scheduleJob);
+					break;
+			}
+			//跳过过期任务
+			String crons = scheduleJob.getCronExpression();
+			if(crons.split(" ").length  == 7){
+				try {
+					Date startDate = new SimpleDateFormat("ss mm HH dd MM ? yyyy").parse(crons);
+					if(startDate.before(new Date())){
+						scheduleJob.setStatus(1);
+						this.saveOrUpdate(scheduleJob);
+						continue;
+					}
+				} catch (ParseException e) {
+					e.printStackTrace();
+				}
+			}
 			CronTrigger cronTrigger = ScheduleUtils.getCronTrigger(scheduler, scheduleJob.getJobId());
             //如果不存在，则创建
             if(cronTrigger == null) {
@@ -45,19 +78,6 @@ public class ScheduleJobServiceImpl extends ServiceImpl<ScheduleJobDao, Schedule
             }
 		}
 	}
-
-//	@Override
-//	public PageUtils2 queryPage(Map<String, Object> params) {
-//		String beanName = (String)params.get("beanName");
-//
-//		IPage<ScheduleJobEntity> page = this.page(
-//			new Query<ScheduleJobEntity>().getPage(params),
-//			new QueryWrapper <ScheduleJobEntity>().like(StringUtils.isNotBlank(beanName),"bean_name", beanName)
-//		);
-//
-//		return new PageUtils2(page);
-//	}
-
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)

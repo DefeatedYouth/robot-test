@@ -32,7 +32,7 @@ public class PatrolTaskResultEntity {
 
     public Date time;
 
-    public Integer recognitionType;
+    public String recognitionType;
 
     public Integer fileType;
 

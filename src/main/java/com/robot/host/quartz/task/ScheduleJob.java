@@ -8,9 +8,15 @@
 
 package com.robot.host.quartz.task;
 
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.robot.host.quartz.entry.QuartzTriggers;
 import com.robot.host.quartz.entry.ScheduleJobEntity;
 import com.robot.host.quartz.entry.ScheduleJobLogEntity;
+import com.robot.host.quartz.service.QuartzTriggersService;
 import com.robot.host.quartz.service.ScheduleJobLogService;
+import com.robot.host.quartz.service.ScheduleJobService;
 import com.robot.host.quartz.util.SpringContextUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.quartz.JobExecutionContext;
@@ -55,7 +61,9 @@ public class ScheduleJob extends QuartzJobBean {
 
 			Object target = SpringContextUtil.getBean(scheduleJob.getBeanName());
 			Method method = target.getClass().getDeclaredMethod("run", String.class);
-			method.invoke(target, scheduleJob.getParams());
+			JSONObject params = JSONUtil.parseObj(scheduleJob.getParams());
+			params.put("jobId",scheduleJob.getJobId());
+			method.invoke(target,params.toString());
 			
 			//任务执行总时长
 			long times = System.currentTimeMillis() - startTime;
@@ -76,6 +84,9 @@ public class ScheduleJob extends QuartzJobBean {
 			log.setError(StringUtils.substring(e.toString(), 0, 2000));
 		}finally {
 			scheduleJobLogService.save(log);
+
+
+
 		}
     }
 }

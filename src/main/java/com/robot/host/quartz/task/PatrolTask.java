@@ -5,17 +5,28 @@ import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.robot.host.base.entry.*;
 import com.robot.host.base.service.*;
-import com.robot.host.common.constants.EnumRobotComplusStatusDataType;
-import com.robot.host.common.constants.EnumSendToRobotMsgType;
+import com.robot.host.common.constants.*;
 import com.robot.host.common.dto.MessageAboutRobotDTO;
 import com.robot.host.common.dto.PatrolRouteDTO;
+import com.robot.host.common.dto.PatrolTaskResultDTO;
 import com.robot.host.common.dto.PatrolTaskStatusDTO;
+import com.robot.host.common.util.SysConfigUtil;
+import com.robot.host.netty.resolver.out.CommonOutResolver;
 import com.robot.host.quartz.constants.JobConstants;
 import com.robot.host.common.util.MessageUtil;
+import com.robot.host.quartz.entry.QuartzTriggers;
+import com.robot.host.quartz.service.QuartzTriggersService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+import org.testng.collections.Lists;
 
+import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
@@ -47,8 +58,20 @@ public class PatrolTask implements ITask {
     @Autowired
     private PatrolTaskResultService patrolTaskResultService;
 
+    @Autowired
+    private OperationLogService operationLogService;
+
+    @Autowired
+    private QuartzTriggersService quartzTriggersService;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
+
     @Override
+    @Transactional
     public void run(String params) {
+        JSONObject paramObj = JSONUtil.parseObj(params);
+        Long jobId = Long.valueOf((Integer) paramObj.get("jobId"));
         //获取机器人
         List<RobotInfoEntity> robotList = robotInfoService.list(new QueryWrapper<RobotInfoEntity>().lambda().eq(RobotInfoEntity::getStatus, 1));
         if(!robotList.isEmpty()){
@@ -59,17 +82,16 @@ public class PatrolTask implements ITask {
 
             //获取taskId
             JSONObject json = JSONUtil.parseObj(params);
-            long busiId = json.getLong(JobConstants.QUARTZ_BUSI_ID);
+            Long busiId = json.getLong(JobConstants.QUARTZ_BUSI_ID);
             String deviceList = json.getStr(JobConstants.QUARTZ_DEVICE_LIST);
             String deviceLevel = json.getStr(JobConstants.QUARTZ_DEVICE_LEVEL);
-            long execId = 0;
+            Long execId = 0L;
             PatrolTaskEntity patrolTask = patrolTaskService.getById(busiId);
-            //修改巡检任务状态
-            this.updatePatrolTaskStatus(patrolTask,PatrolTask.RUNNING,"任务正在执行");
-            //修改机器人状态
-            this.updateRobotStatus(robotCode,2, EnumRobotComplusStatusDataType.YunXingZhuangTai_XunShi);
-            //生成巡视路线
-            this.createPatrolRoute(robotCode,deviceList);
+            //任务开始执行
+            this.saveOperationLog(robotList.get(0).getRobotInfoId(), jobId, String.format(SysLogConstant.ROBOT_PATROL_TASK_START, "巡检任务", jobId), null, patrolTask.getPatrolTaskCode());
+            //设置任务实际执行时间
+            patrolTask.setRealBeginTime(new Date(System.currentTimeMillis()));
+            patrolTaskService.saveOrUpdate(patrolTask);
             //新增执行记录
             PatrolTaskExecEntity execEntity = new PatrolTaskExecEntity();
             execEntity.setExecStatus(patrolTask.getExecStatus());
@@ -83,9 +105,15 @@ public class PatrolTask implements ITask {
             patrolTaskExecService.save(execEntity);
 
             execId = execEntity.getPatrolTaskExecId();
+            //修改巡检任务状态
+            this.updatePatrolTaskStatus(execId,patrolTask,PatrolTask.RUNNING,"任务正在执行");
+            //修改机器人状态
+            this.updateRobotStatus(robotCode,2, EnumRobotComplusStatusDataType.YunXingZhuangTai_XunShi);
+            //生成巡视路线
+            this.createPatrolRoute(robotCode,deviceList);
 
             //获取任务场景
-            List<DeviceInfoEntry> scenes = deviceInfoService.list(new QueryWrapper<DeviceInfoEntry>().lambda().in(DeviceInfoEntry::getDeviceId, deviceList));
+            List<DeviceInfoEntry> scenes = deviceInfoService.list(new QueryWrapper<DeviceInfoEntry>().lambda().in(DeviceInfoEntry::getDeviceId, Lists.newArrayList(deviceList.split(","))));
             scenes.forEach(scene -> {
                 log.info("{}正在前往：{}",robotName,scene.getDeviceName());
                 robotInfoService.updateCoordinate(robotCode,scene.getPosX(), scene.getPosY());
@@ -99,16 +127,21 @@ public class PatrolTask implements ITask {
                 result.setValue("");
                 result.setUnit("");
                 result.setTime(new Date());
-                result.setRecognitionType(Integer.valueOf(scene.getRecognitionTypeList()));
+                result.setRecognitionType(scene.getRecognitionTypeList());
                 //TODO 文件
-                result.setFileType(Integer.valueOf(scene.getSaveTypeList()));
-                result.setFilePath("");
+                result.setFileType(StringUtils.isBlank(scene.getSaveTypeList())? null : Integer.valueOf(scene.getSaveTypeList()));
+                result.setFilePath(SysConfigUtil.get(EnumSysConfigType.ResultFile.getName()));
                 result.setRectangle("");
-
-                result.setPatrolTaskResultId(execEntity.getPatrolTaskExecId());
-
+                result.setTaskPatrolledId(execEntity.getPatrolTaskExecId());
                 patrolTaskResultService.save(result);
-
+                this.patrolResultData(result.getPatrolTaskResultId());
+                //添加操作日志
+                this.saveOperationLog(robotList.get(0).getRobotInfoId(),
+                        jobId,
+                        String.format(SysLogConstant.ROBOT_PATROL_TASK_ING, "巡检任务", robotCode, scene.getDeviceName()),
+                        scene.getDeviceId(),
+                        patrolTask.getPatrolTaskCode());
+                //巡检耗时
                 try {
                     Thread.sleep(5000);
                 } catch (InterruptedException e) {
@@ -117,16 +150,56 @@ public class PatrolTask implements ITask {
             });
 
             //修改巡检任务状态
-            this.updatePatrolTaskStatus(patrolTask,PatrolTask.EXECUTED,"任务已执行");
+            this.updatePatrolTaskStatus(execId, patrolTask,PatrolTask.EXECUTED,"任务已执行");
             //修改机器人状态
             this.updateRobotStatus(robotCode,1, EnumRobotComplusStatusDataType.YunXingZhuangTai_KongXian);
+            //任务结束，返回巡视结果
+            this.patrolResultData(execId);
+            this.saveOperationLog(robotList.get(0).getRobotInfoId(), jobId, String.format(SysLogConstant.ROBOT_PATROL_TASK_START, "巡检任务", jobId), null,patrolTask.getPatrolTaskCode());
         }else{
+            //TODO
             log.info("当前没有空闲机器人");
         }
     }
 
     /**
-     * 生成巡视沦陷
+     * 添加任务执行日志
+     * @param robotId
+     * @param jobId
+     * @param logContent
+     * @param deviceId
+     * @param taskCode
+     */
+    @Override
+    public void saveOperationLog(Long robotId, Long jobId, String logContent, String deviceId, String taskCode) {
+        OperationLogEntity log = new OperationLogEntity();
+        log.setLogType(NettyConstants.PATROL_TASK);
+        log.setRobotId(robotId);
+        log.setJobId(jobId);
+        log.setLogContent(logContent);
+        log.setDeviceId(deviceId);
+        log.setOperationTime(System.currentTimeMillis());
+        operationLogService.save(log);
+        //推送任务状态结果给前台
+        messagingTemplate.convertAndSend(EnumTopicDistination.PATROL_TASK.getText(),taskCode);
+    }
+
+    /**
+     * 返回巡检结果
+     * @param taskResultId
+     */
+    private void patrolResultData(Long taskResultId) {
+        PatrolTaskResultDTO resultDTO = new PatrolTaskResultDTO();
+        resultDTO.setTaskResultId(taskResultId);
+        String resultMsg = JSONUtil.toJsonStr(resultDTO);
+        MessageAboutRobotDTO message = new MessageAboutRobotDTO();
+        message.setMsgBody(resultMsg);
+        message.setMsgType(EnumSendToRobotMsgType.PATROL_TASK_RESULT);
+        MessageUtil.sendMessage(JSONUtil.toJsonStr(message));
+    }
+
+    /**
+     * 生成巡视路线
      * @param robotCode
      * @param deviceList
      */
@@ -144,33 +217,40 @@ public class PatrolTask implements ITask {
     /**
      * 修改机器人状态
      * @param robotCode
-     * @param i
-     * @param yunXingZhuangTai_kongXian
+     * @param status
+     * @param statusData
      */
     private void updateRobotStatus(String robotCode, Integer status, EnumRobotComplusStatusDataType statusData) {
         RobotInfoEntity robotInfo = robotInfoService.getOne(new QueryWrapper<RobotInfoEntity>().lambda().eq(RobotInfoEntity::getCode, robotCode));
         robotInfo.setStatus(status);
         robotInfoService.saveOrUpdate(robotInfo);
 
-        MessageUtil.statusDataMessage(robotCode, statusData,null,null);
+        MessageUtil.statusDataMessage(robotCode, statusData);
     }
 
     /**
      * 修改巡检任务状态
+     * @param execId
      * @param patrolTask
      * @param state
      * @param description
      */
-    private void updatePatrolTaskStatus(PatrolTaskEntity patrolTask, Integer state,String description) {
+    private void updatePatrolTaskStatus(long execId, PatrolTaskEntity patrolTask, Integer state, String description) {
         patrolTask.setExecStatus(state);
         patrolTaskService.saveOrUpdate(patrolTask);
 
         //推送任务状态
         PatrolTaskStatusDTO taskStatusDTO = new PatrolTaskStatusDTO();
+        taskStatusDTO.setTaskPatrolledId(execId);
         taskStatusDTO.setTaskCode(patrolTask.getPatrolTaskCode());
         taskStatusDTO.setDescription(description);
         String taskStatusMsg = JSONUtil.toJsonStr(taskStatusDTO);
-        MessageUtil.sendMessage(taskStatusMsg);
+
+        MessageAboutRobotDTO messageAboutRobotDTO = new MessageAboutRobotDTO();
+        messageAboutRobotDTO.setMsgType(EnumSendToRobotMsgType.PATROL_TASK_STATUS);
+        messageAboutRobotDTO.setMsgBody(taskStatusMsg);
+        String jsonStr = JSONUtil.toJsonStr(messageAboutRobotDTO);
+        MessageUtil.sendMessage(jsonStr);
 
     }
 

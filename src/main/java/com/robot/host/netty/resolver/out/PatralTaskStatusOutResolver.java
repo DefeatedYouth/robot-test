@@ -2,6 +2,7 @@ package com.robot.host.netty.resolver.out;
 
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.robot.host.base.service.OperationLogService;
 import com.robot.host.common.constants.EnumSendToRobotMsgType;
 import com.robot.host.common.constants.NettyConstants;
 import com.robot.host.common.constants.ProtocolMessage;
@@ -28,7 +29,11 @@ public class PatralTaskStatusOutResolver extends CommonOutResolver {
 
     private PatrolTaskExecService patrolTaskExecService;
 
-    public PatralTaskStatusOutResolver(PatrolTaskService patrolTaskService, PatrolTaskExecService patrolTaskExecService) {
+    private OperationLogService operationLogService;
+
+    public PatralTaskStatusOutResolver(PatrolTaskService patrolTaskService, PatrolTaskExecService patrolTaskExecService, OperationLogService operationLogService) {
+        super(operationLogService);
+        this.operationLogService = operationLogService;
         this.patrolTaskService = patrolTaskService;
         this.patrolTaskExecService = patrolTaskExecService;
     }
@@ -43,6 +48,16 @@ public class PatralTaskStatusOutResolver extends CommonOutResolver {
     }
 
     @Override
+    public String operationName() {
+        return "任务状态";
+    }
+
+    @Override
+    public String className() {
+        return this.getClass().getCanonicalName();
+    }
+
+    @Override
     protected ProtocolMessage concreteResolve(MessageAboutRobotDTO busiMessage) {
         ProtocolMessage protocol = new ProtocolMessage();
 
@@ -50,7 +65,7 @@ public class PatralTaskStatusOutResolver extends CommonOutResolver {
         PatrolTaskStatusDTO patrolTaskStatusDTO = JSONUtil.toBean(busiMessage.getMsgBody(), PatrolTaskStatusDTO.class);
 
         PatrolTaskEntity patrolTask = patrolTaskService.getOne(new QueryWrapper<PatrolTaskEntity>().lambda().eq(PatrolTaskEntity::getPatrolTaskCode, patrolTaskStatusDTO.getTaskCode()));
-        PatrolTaskExecEntity patrolTaskExec = patrolTaskExecService.getOne(new QueryWrapper<PatrolTaskExecEntity>().lambda().eq(PatrolTaskExecEntity::getPatrolTaskCode, patrolTask.getPatrolTaskCode()));
+//        PatrolTaskExecEntity patrolTaskExec = patrolTaskExecService.getOne(new QueryWrapper<PatrolTaskExecEntity>().lambda().eq(PatrolTaskExecEntity::getPatrolTaskCode, patrolTask.getPatrolTaskCode()));
 
         //封装XML
         XmlOutRobotPatralTaskStatusDTO patralTaskStatusVO = new XmlOutRobotPatralTaskStatusDTO();
@@ -59,15 +74,15 @@ public class PatralTaskStatusOutResolver extends CommonOutResolver {
         patralTaskStatusVO.setType(NettyConstants.IN_CODE_TASK_STATUS + "");
         XmlOutRobotPatralTaskStatusDTO.Item item = new XmlOutRobotPatralTaskStatusDTO.Item();
         //TODO  巡视任务执行id
-        item.setTaskPatrolledId(patrolTaskExec == null ? null : patrolTaskExec.getPatrolTaskExecId().toString());
+        item.setTaskPatrolledId(patrolTaskStatusDTO.getTaskPatrolledId() + "");
 
         item.setTaskName(patrolTask.getPatrolTaskName());
         item.setTaskCode(patrolTask.getPatrolTaskCode());
         //TODO 任务状态
         item.setTaskState(patrolTask.getExecStatus() + "");
 
-        item.setPlanStartTime(patrolTask.getTaskBeginTime().toString());
-        item.setStartTime(patrolTask.getRealBeginTime().toString());
+        item.setPlanStartTime(patrolTask.getTaskBeginTime() + "");
+        item.setStartTime(patrolTask.getRealBeginTime() + "");
         //任务进度
         BigDecimal taskProgress = RobotDateUtil.countTaskProgress(patrolTask.getRealBeginTime(), patrolTask.getTaskEndTime());
         item.setTaskProgress(taskProgress == null ? null : taskProgress + "%");

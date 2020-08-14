@@ -1,8 +1,15 @@
 package com.robot.host.quartz.task;
 
+import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.robot.host.base.entry.DeviceInfoEntry;
+import com.robot.host.base.entry.OperationLogEntity;
+import com.robot.host.base.service.OperationLogService;
 import com.robot.host.common.constants.EnumSendToRobotMsgType;
+import com.robot.host.common.constants.EnumTopicDistination;
 import com.robot.host.common.constants.NettyConstants;
+import com.robot.host.common.constants.SysLogConstant;
 import com.robot.host.common.dto.MessageAboutRobotDTO;
 import com.robot.host.common.dto.XmlOutRobotPushCommonDTO;
 import com.robot.host.base.entry.RobotInfoEntity;
@@ -10,11 +17,18 @@ import com.robot.host.netty.resolver.out.CommonOutResolver;
 import com.robot.host.base.service.RobotInfoService;
 import com.robot.host.common.util.MessageUtil;
 import com.robot.host.common.util.XmlBeanUtils;
+import com.robot.host.quartz.entry.QuartzTriggers;
+import com.robot.host.quartz.service.QuartzTriggersService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.testng.collections.Lists;
 
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 @Slf4j
@@ -26,17 +40,32 @@ public class RunDataTask implements ITask {
      * mileage
      * quantity
      */
-    private String speedUnit = " m/s";
-    private String mileageUnit = " m";
-    private String quantityUnit = " %";
+    private String speedUnit = "m/s";
+    private String mileageUnit = "m";
+    private String quantityUnit = "%";
 
 
     @Autowired
     private RobotInfoService robotInfoService;
 
+    @Autowired
+    private OperationLogService operationLogService;
+
+    @Autowired
+    private QuartzTriggersService quartzTriggersService;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
+
     @Override
     public void run(String params){
         log.info("[机器人主机]开始推送运行数据");
+        //任务开始执行
+        JSONObject paramObj = JSONUtil.parseObj(params);
+        Long jobId = Long.valueOf((Integer) paramObj.get("jobId"));
+        this.saveOperationLog(null, jobId, String.format(SysLogConstant.ROBOT_PATROL_TASK_START, "运行数据", jobId), null, null);
+
+
         String currentDate = CommonOutResolver.sdf.format(System.currentTimeMillis());
         List<RobotInfoEntity> robotList = robotInfoService.list();
         //封装xmlDTO
@@ -89,7 +118,28 @@ public class RunDataTask implements ITask {
         runDataVO.setMsgBody(jsonStr);
         String runDataMsg = JSONUtil.toJsonStr(runDataVO);
         MessageUtil.sendMessage(runDataMsg);
+        this.saveOperationLog(null, jobId, String.format(SysLogConstant.ROBOT_PATROL_TASK_END, "运行数据", jobId), null, null);
         log.info("[机器人主机]推送运行数据结束");
+    }
+
+
+    /**
+     * 添加任务执行日志
+     * @param robotId
+     * @param jobId
+     * @param logContent
+     */
+    @Override
+    public void saveOperationLog(Long robotId, Long jobId, String logContent, String deviceId, String taskCode) {
+        operationLogService.saveSysLogThenSendWebSocket(SysLogConstant.ROBOT_PATROL_TASK,//日志类型:任务
+                SysLogConstant.SYS_LOCAL_STATUS,//日志状态:输出
+                logContent,//日志内容
+                robotId,//机器人id
+                jobId,//任务id
+                deviceId,//设备点位id
+                this.getClass().getCanonicalName());//当前类名
+        //推送任务状态结果给前台
+//        messagingTemplate.convertAndSend(EnumTopicDistination.PATROL_TASK.getText(), jobId);
     }
 
     /**

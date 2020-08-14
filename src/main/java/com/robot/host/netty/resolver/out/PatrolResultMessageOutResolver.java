@@ -2,6 +2,7 @@ package com.robot.host.netty.resolver.out;
 
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.robot.host.base.service.OperationLogService;
 import com.robot.host.common.constants.EnumSendToRobotMsgType;
 import com.robot.host.common.constants.NettyConstants;
 import com.robot.host.common.constants.ProtocolMessage;
@@ -22,7 +23,11 @@ public class PatrolResultMessageOutResolver extends CommonOutResolver {
 
     private PatrolTaskResultService patrolTaskResultService;
 
-    public PatrolResultMessageOutResolver(PatrolTaskResultService patrolTaskResultService) {
+    private OperationLogService operationLogService;
+
+    public PatrolResultMessageOutResolver(PatrolTaskResultService patrolTaskResultService, OperationLogService operationLogService) {
+        super(operationLogService);
+        this.operationLogService = operationLogService;
         this.patrolTaskResultService = patrolTaskResultService;
     }
 
@@ -36,34 +41,44 @@ public class PatrolResultMessageOutResolver extends CommonOutResolver {
     }
 
     @Override
+    public String operationName() {
+        return "巡视结果";
+    }
+
+    @Override
+    public String className() {
+        return this.getClass().getCanonicalName();
+    }
+
+    @Override
     protected ProtocolMessage concreteResolve(MessageAboutRobotDTO busiMessage) {
 
         PatrolTaskResultDTO patrolTaskResult = JSONUtil.toBean(busiMessage.getMsgBody(), PatrolTaskResultDTO.class);
-        List<PatrolTaskResultEntity> patrolTaskResultList = patrolTaskResultService.list(new QueryWrapper<PatrolTaskResultEntity>().lambda().eq(PatrolTaskResultEntity::getTaskCode, patrolTaskResult.getTaskCode()));
+        PatrolTaskResultEntity result = patrolTaskResultService.getById(patrolTaskResult.getTaskResultId());
 
         //封装XML
         XmlOutRobotPatrolResultDTO patrolResultVO = new XmlOutRobotPatrolResultDTO();
         patrolResultVO.setSendCode(NettyConstants.ROBOT_HOST_CODE);
         patrolResultVO.setReceiveCode(NettyConstants.PATROL_HOST_CODE);
         patrolResultVO.setType(NettyConstants.IN_CODE_TASK_RESULT + "");
+        //返回结果
         List<XmlOutRobotPatrolResultDTO.Item> items = Lists.newArrayList();
-        patrolTaskResultList.forEach(result -> {
-            XmlOutRobotPatrolResultDTO.Item item = new XmlOutRobotPatrolResultDTO.Item();
-            item.setRobotCode(result.getRobotCode());
-            item.setTaskName(result.getTaskName());
-            item.setTaskCode(result.getTaskCode());
-            item.setDeviceName(result.getDeviceName());
-            item.setDeviceId(result.getDeviceId() + "");
-            item.setValue(result.getValue());
-            item.setValueUnit(result.getValue() + result.getUnit());
-            item.setUnit(result.getUnit());
-            item.setTime(result.getTime().toString());
-            item.setRecognitionType(result.getRecognitionType() + "");
-            item.setFileType(result.getFileType() + "");
-            item.setRectangle(result.getRectangle());
-            item.setTaskPatrolledId(result.getTaskPatrolledId() + "");
-            items.add(item);
-        });
+        XmlOutRobotPatrolResultDTO.Item item = new XmlOutRobotPatrolResultDTO.Item();
+        item.setRobotCode(result.getRobotCode());
+        item.setTaskName(result.getTaskName());
+        item.setTaskCode(result.getTaskCode());
+        item.setDeviceName(result.getDeviceName());
+        item.setDeviceId(result.getDeviceId() + "");
+        item.setValue(result.getValue());
+        item.setValueUnit(result.getValue() + result.getUnit());
+        item.setUnit(result.getUnit());
+        item.setTime(result.getTime().toString());
+        item.setRecognitionType(result.getRecognitionType() + "");
+        item.setFileType(result.getFileType() + "");
+        item.setFilePath(result.getFilePath());
+        item.setRectangle(result.getRectangle());
+        item.setTaskPatrolledId(result.getTaskPatrolledId() + "");
+        items.add(item);
         patrolResultVO.setItems(items);
 
         ProtocolMessage protocol = new ProtocolMessage();

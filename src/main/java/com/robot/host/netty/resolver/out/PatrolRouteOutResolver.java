@@ -4,6 +4,7 @@ import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.robot.host.base.entry.DeviceInfoEntry;
 import com.robot.host.base.service.DeviceInfoService;
+import com.robot.host.base.service.OperationLogService;
 import com.robot.host.common.constants.EnumSendToRobotMsgType;
 import com.robot.host.common.constants.NettyConstants;
 import com.robot.host.common.constants.ProtocolMessage;
@@ -27,7 +28,11 @@ public class PatrolRouteOutResolver extends CommonOutResolver {
 
     private DeviceInfoService deviceInfoService;
 
-    public PatrolRouteOutResolver(SceneInfoService sceneInfoService, RobotInfoService robotInfoService, DeviceInfoService deviceInfoService) {
+    private OperationLogService operationLogService;
+
+    public PatrolRouteOutResolver(SceneInfoService sceneInfoService, RobotInfoService robotInfoService, DeviceInfoService deviceInfoService, OperationLogService operationLogService) {
+        super(operationLogService);
+        this.operationLogService = operationLogService;
         this.sceneInfoService = sceneInfoService;
         this.robotInfoService = robotInfoService;
         this.deviceInfoService = deviceInfoService;
@@ -43,12 +48,22 @@ public class PatrolRouteOutResolver extends CommonOutResolver {
     }
 
     @Override
+    public String operationName() {
+        return "巡视线路";
+    }
+
+    @Override
+    public String className() {
+        return this.getClass().getCanonicalName();
+    }
+
+    @Override
     protected ProtocolMessage concreteResolve(MessageAboutRobotDTO busiMessage) {
         ProtocolMessage protocol = new ProtocolMessage();
         //获取scene
         PatrolRouteDTO patrolRouteDTO = JSONUtil.toBean(busiMessage.getMsgBody(), PatrolRouteDTO.class);
         RobotInfoEntity robotInfo = robotInfoService.getOne(new QueryWrapper<RobotInfoEntity>().lambda().eq(RobotInfoEntity::getCode, patrolRouteDTO.getRobotCode()));
-        List<DeviceInfoEntry> deviceInfoList = deviceInfoService.list(new QueryWrapper<DeviceInfoEntry>().lambda().in(DeviceInfoEntry::getDeviceId, patrolRouteDTO.getSceneIds()));
+        List<DeviceInfoEntry> deviceInfoList = deviceInfoService.list(new QueryWrapper<DeviceInfoEntry>().lambda().in(DeviceInfoEntry::getDeviceId, Lists.newArrayList(patrolRouteDTO.getSceneIds().split(","))));
         //当前时间
         String currentDate = CommonOutResolver.sdf.format(System.currentTimeMillis());
 

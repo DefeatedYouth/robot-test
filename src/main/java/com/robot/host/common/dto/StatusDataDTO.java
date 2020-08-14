@@ -14,7 +14,4 @@ public class StatusDataDTO {
 
     private EnumRobotComplusStatusDataType statusDataType;
 
-    private String statusUnit;
-
-    private String statusValue;
 }

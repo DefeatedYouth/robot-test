@@ -1,5 +1,8 @@
 package com.robot.host.common.constants;
 
+import com.alibaba.fastjson.annotation.JSONType;
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -9,6 +12,8 @@ import java.util.Map;
  * @author: dadi
  * @create: 2020-05-07 16:17
  */
+@JSONType(serializeEnumAsJavaBean = true)
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public enum EnumRobotComplusStatusDataType {
     /**
      <1>: = 电池电量低 <0>: = 正常

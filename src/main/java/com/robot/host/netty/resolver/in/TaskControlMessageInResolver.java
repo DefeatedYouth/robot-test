@@ -1,12 +1,15 @@
 package com.robot.host.netty.resolver.in;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.robot.host.base.service.OperationLogService;
 import com.robot.host.common.constants.EnumRobotTaskControlType;
 import com.robot.host.common.constants.NettyConstants;
 import com.robot.host.common.constants.ProtocolMessage;
+import com.robot.host.common.constants.SysLogConstant;
 import com.robot.host.common.dto.MessageJudgeInDTO;
 import com.robot.host.common.dto.XmlInRobotTaskControlDTO;
 import com.robot.host.base.entry.PatrolTaskEntity;
+import com.robot.host.quartz.constants.JobConstants;
 import com.robot.host.quartz.entry.ScheduleJobEntity;
 import com.robot.host.quartz.service.ScheduleJobService;
 import com.robot.host.base.service.PatrolTaskService;
@@ -28,9 +31,12 @@ public class TaskControlMessageInResolver implements InResolver {
 
     private PatrolTaskService patrolTaskService;
 
-    public TaskControlMessageInResolver(ScheduleJobService scheduleJobService, PatrolTaskService patrolTaskService) {
+    private OperationLogService operationLogService;
+
+    public TaskControlMessageInResolver(ScheduleJobService scheduleJobService, PatrolTaskService patrolTaskService, OperationLogService operationLogService) {
         this.scheduleJobService = scheduleJobService;
         this.patrolTaskService = patrolTaskService;
+        this.operationLogService = operationLogService;
     }
 
     @Override
@@ -47,30 +53,35 @@ public class TaskControlMessageInResolver implements InResolver {
         XmlInRobotTaskControlDTO taskControl = XmlBeanUtils.xmlToBean(message.getBody(), XmlInRobotTaskControlDTO.class);
         // 获取 ScheduleJob
         PatrolTaskEntity patrolTask = patrolTaskService.getOne(new QueryWrapper<PatrolTaskEntity>().lambda().eq(PatrolTaskEntity::getPatrolTaskCode, taskControl.getCode()));
-        String paramsLike = "\"exec_id\":" + patrolTask.getPatrolTaskId();
+        String paramsLike = "\"" + JobConstants.QUARTZ_BUSI_ID + "\":" + patrolTask.getPatrolTaskId();
         QueryWrapper<ScheduleJobEntity> jobQueryWrapper = new QueryWrapper<>();
         jobQueryWrapper.lambda().like(ScheduleJobEntity::getParams,paramsLike);
         List<ScheduleJobEntity> scheduleJobList = scheduleJobService.list(jobQueryWrapper);
-
-        //获取jobId
-        Long jobId = scheduleJobList.get(0).getJobId();
-
-        if (EnumRobotTaskControlType.START.getCommand() == Integer.valueOf(taskControl.getCommand())){
-            //启动任务
-        }else if (EnumRobotTaskControlType.PAUSE.getCommand() == Integer.valueOf(taskControl.getCommand())){
-            //任务暂停
-            scheduleJobService.pause(new Long[]{jobId});
-        }else if (EnumRobotTaskControlType.CONTINUE.getCommand() == Integer.valueOf(taskControl.getCommand())){
-            //任务继续
-            scheduleJobService.resume(new Long[]{jobId});
-        }else if (EnumRobotTaskControlType.STOP.getCommand() == Integer.valueOf(taskControl.getCommand())){
-            //任务停止
-            scheduleJobService.deleteBatch(new Long[]{jobId});
+        //周期任务  停一个  停所有
+        for (ScheduleJobEntity scheduleJobEntity : scheduleJobList) {
+            Long jobId = scheduleJobEntity.getJobId();
+            if (EnumRobotTaskControlType.START.getCommand() == Integer.valueOf(taskControl.getCommand())){
+                //启动任务
+            }else if (EnumRobotTaskControlType.PAUSE.getCommand() == Integer.valueOf(taskControl.getCommand())){
+                //任务暂停
+                scheduleJobService.pause(new Long[]{jobId});
+            }else if (EnumRobotTaskControlType.CONTINUE.getCommand() == Integer.valueOf(taskControl.getCommand())){
+                //任务继续
+                scheduleJobService.resume(new Long[]{jobId});
+            }else if (EnumRobotTaskControlType.STOP.getCommand() == Integer.valueOf(taskControl.getCommand())){
+                //任务停止
+                scheduleJobService.deleteBatch(new Long[]{jobId});
+            }
+            operationLogService.saveSysLogThenSendWebSocket(SysLogConstant.ROBOT_OTHER,
+                    SysLogConstant.SYS_LOCAL_STATUS,
+                    String.format("[%s]正在修改任务状态，jobid：%s，任务状态：%s", operationName(), jobId, EnumRobotTaskControlType.getEnum(taskControl.getCode() + "-" + taskControl.getCommand())),
+                    null,null,null,className());
         }
+
 
         //返回响应信息
         ProtocolMessage respMsg = new ProtocolMessage();
-        XmlInRobotTaskControlDTO respDTO = returnMessage(NettyConstants.RESPONSE_CODE_SUCCESS + "", jobId + "");
+        XmlInRobotTaskControlDTO respDTO = returnMessage(NettyConstants.RESPONSE_CODE_SUCCESS + "", patrolTask.getPatrolTaskId() + "");
         String jsonMsg = XmlBeanUtils.beanToXml(respDTO, XmlInRobotTaskControlDTO.class);
         respMsg.setBody(jsonMsg);
         respMsg.setSessionId(message.getSessionId());
@@ -79,7 +90,17 @@ public class TaskControlMessageInResolver implements InResolver {
         ChannelFuture future = channel.writeAndFlush(respMsg);
         future.addListener((ChannelFutureListener) channelFuture ->
                 log.info("[任务控制]响应信息：{}",jsonMsg));
-        return null;
+        return respMsg;
+    }
+
+    @Override
+    public String operationName() {
+        return "任务控制";
+    }
+
+    @Override
+    public String className() {
+        return this.getClass().getCanonicalName();
     }
 
 

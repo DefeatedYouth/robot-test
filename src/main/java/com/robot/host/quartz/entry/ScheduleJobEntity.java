@@ -13,6 +13,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.robot.host.common.constants.EnumSysConfigType;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
@@ -92,5 +93,22 @@ public class ScheduleJobEntity implements Serializable {
 	 */
 	@TableField(exist = false)
 	private Integer scheduleType;
+
+	/**
+	 * 巡检任务名称
+	 */
+	@TableField(exist = false)
+	private String patrolTaskName;
+
+	private void setPatrolTaskNameByParams(){
+		if (params == null){
+			if(this.beanName.equalsIgnoreCase(EnumSysConfigType.RunData.getBeanName())){
+				this.setPatrolTaskName("运行数据");
+			}
+			if(this.beanName.equalsIgnoreCase(EnumSysConfigType.RunData.getBeanName())){
+				this.setPatrolTaskName("微气象数据");
+			}
+		}
+	}
 
 }

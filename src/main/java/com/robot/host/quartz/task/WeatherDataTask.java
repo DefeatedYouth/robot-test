@@ -1,9 +1,13 @@
 package com.robot.host.quartz.task;
 
+import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.robot.host.base.service.OperationLogService;
 import com.robot.host.common.constants.EnumSendToRobotMsgType;
+import com.robot.host.common.constants.EnumTopicDistination;
 import com.robot.host.common.constants.NettyConstants;
+import com.robot.host.common.constants.SysLogConstant;
 import com.robot.host.common.dto.MessageAboutRobotDTO;
 import com.robot.host.common.dto.XmlOutRobotPushCommonDTO;
 import com.robot.host.base.entry.RobotInfoEntity;
@@ -13,8 +17,10 @@ import com.robot.host.base.service.RobotInfoService;
 import com.robot.host.base.service.WeatherInfoService;
 import com.robot.host.common.util.MessageUtil;
 import com.robot.host.common.util.XmlBeanUtils;
+import com.robot.host.quartz.service.QuartzTriggersService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.testng.collections.Lists;
 
@@ -30,9 +36,9 @@ public class WeatherDataTask implements ITask{
      * humidity
      * windSpeed
      */
-    private String tempUnit = " ℃";
-    private String humidityUnit = " %";
-    private String windSpeedUnit = " m/s";
+    private String tempUnit = "℃";
+    private String humidityUnit = "%";
+    private String windSpeedUnit = "m/s";
 
     @Autowired
     private WeatherInfoService weatherInfoService;
@@ -40,9 +46,23 @@ public class WeatherDataTask implements ITask{
     @Autowired
     private RobotInfoService robotInfoService;
 
+    @Autowired
+    private OperationLogService operationLogService;
+
+    @Autowired
+    private QuartzTriggersService quartzTriggersService;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
+
     @Override
     public void run(String params) {
         log.info("[机器人主机]开始推送微气象数据");
+
+        //任务开始执行
+        JSONObject paramObj = JSONUtil.parseObj(params);
+        Long jobId = Long.valueOf((Integer) paramObj.get("jobId"));
+        this.saveOperationLog(null, jobId, String.format(SysLogConstant.ROBOT_PATROL_TASK_START, "微气象数据", jobId), null, null);
 
         String currentDate = CommonOutResolver.sdf.format(System.currentTimeMillis());
 
@@ -99,6 +119,28 @@ public class WeatherDataTask implements ITask{
         String weatherDataMsg = JSONUtil.toJsonStr(weatherDataVO);
         MessageUtil.sendMessage(weatherDataMsg);
 
+        this.saveOperationLog(null, jobId, String.format(SysLogConstant.ROBOT_PATROL_TASK_END, "微气象数据", jobId), null, null);
+
         log.info("[机器人主机]推送微气象数据结束");
+    }
+
+
+    /**
+     * 添加任务执行日志
+     * @param robotId
+     * @param jobId
+     * @param logContent
+     */
+    @Override
+    public void saveOperationLog(Long robotId, Long jobId, String logContent, String deviceId, String taskCode) {
+        operationLogService.saveSysLogThenSendWebSocket(SysLogConstant.ROBOT_PATROL_TASK,//日志类型:任务
+                SysLogConstant.SYS_LOCAL_STATUS,//日志状态:本地
+                logContent,//日志内容
+                robotId,//机器人id
+                jobId,//任务id
+                deviceId,//设备点位id
+                this.getClass().getCanonicalName());//当前类名
+        //推送任务状态结果给前台
+//        messagingTemplate.convertAndSend(EnumTopicDistination.PATROL_TASK.getText(), jobId);
     }
 }

@@ -17,7 +17,8 @@ public enum EnumTaskPeriodType {
     WEEK(3, "周"),
 
     MONTH(4, "月"),
-    TIMEDTASK(5, "定时任务");
+    TIMEDTASK(5, "定时任务"),
+    EXEC(6, "立即执行");
 
     private Integer value;
     private String text;

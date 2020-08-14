@@ -1,5 +1,6 @@
 package com.robot.host.base.entry;
 
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -9,6 +10,9 @@ import lombok.Data;
 @ApiModel("微气象数据")
 @TableName("robot_weather_info")
 public class WeatherInfoEntry {
+
+    @TableId
+    private Long weatherInfoId;
 
     @ApiModelProperty("机器人编码")
     private String robotCode;

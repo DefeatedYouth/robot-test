@@ -25,7 +25,17 @@ public class NoItemsResponseMessageInResolver implements InResolver {
 
     @Override
     public ProtocolMessage resolve(ProtocolMessage message, ChannelHandlerContext ctx) {
-        log.info("无Item响应");
+        log.info("无操作响应");
         return null;
+    }
+
+    @Override
+    public String operationName() {
+        return "Common";
+    }
+
+    @Override
+    public String className() {
+        return this.getClass().getCanonicalName();
     }
 }

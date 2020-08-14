@@ -2,6 +2,7 @@ package com.robot.host.netty.resolver.out;
 
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.robot.host.base.service.OperationLogService;
 import com.robot.host.common.constants.EnumSendToRobotMsgType;
 import com.robot.host.common.constants.NettyConstants;
 import com.robot.host.common.constants.ProtocolMessage;
@@ -22,7 +23,11 @@ public class CoordinateOutResolver extends CommonOutResolver {
 
     private RobotInfoService robotInfoService;
 
-    public CoordinateOutResolver(RobotInfoService robotInfoService) {
+    private OperationLogService operationLogService;
+
+    public CoordinateOutResolver(RobotInfoService robotInfoService, OperationLogService operationLogService) {
+        super(operationLogService);
+        this.operationLogService = operationLogService;
         this.robotInfoService = robotInfoService;
     }
 
@@ -33,6 +38,16 @@ public class CoordinateOutResolver extends CommonOutResolver {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public String operationName() {
+        return "坐标";
+    }
+
+    @Override
+    public String className() {
+        return this.getClass().getCanonicalName();
     }
 
     @Override

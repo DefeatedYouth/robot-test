@@ -73,10 +73,20 @@ public class ModelSyncMessageInResolver implements InResolver {
         returnMsg.setSessionId(message.getSessionId());
         returnMsg.setBody(jsonMsg);
 
-        NioSocketChannel channel = SessionSocketHolder.get(NettyConstants.ROBOT_HOST_CODE);
-        ChannelFuture future = channel.writeAndFlush(jsonMsg);
-        future.addListener((ChannelFutureListener) channelFuture ->
-                log.info("[模型同步]响应信息:{}",jsonMsg));
-        return null;
+//        NioSocketChannel channel = SessionSocketHolder.get(NettyConstants.ROBOT_HOST_CODE);
+//        ChannelFuture future = channel.writeAndFlush(jsonMsg);
+//        future.addListener((ChannelFutureListener) channelFuture ->
+//                log.info("[模型同步]响应信息:{}",jsonMsg));
+        return returnMsg;
+    }
+
+    @Override
+    public String operationName() {
+        return "模型同步";
+    }
+
+    @Override
+    public String className() {
+        return this.getClass().getCanonicalName();
     }
 }

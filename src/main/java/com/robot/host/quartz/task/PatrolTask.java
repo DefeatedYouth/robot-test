@@ -116,7 +116,7 @@ public class PatrolTask implements ITask {
             List<DeviceInfoEntry> scenes = deviceInfoService.list(new QueryWrapper<DeviceInfoEntry>().lambda().in(DeviceInfoEntry::getDeviceId, Lists.newArrayList(deviceList.split(","))));
             scenes.forEach(scene -> {
                 log.info("{}正在前往：{}",robotName,scene.getDeviceName());
-                robotInfoService.updateCoordinate(robotCode,scene.getPosX(), scene.getPosY());
+//                robotInfoService.updateCoordinate(robotCode,scene.getPosX(), scene.getPosY());
                 PatrolTaskResultEntity result = new PatrolTaskResultEntity();
                 result.setRobotCode(robotCode);
                 result.setTaskName(patrolTask.getPatrolTaskName());

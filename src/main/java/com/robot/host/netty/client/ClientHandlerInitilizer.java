@@ -81,13 +81,13 @@ public class ClientHandlerInitilizer extends ChannelInitializer<Channel> {
         // 添加用于解决粘包和拆包问题的处理器
         pipeline.addLast(new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, Integer.MAX_VALUE, 10, 4, 2, 0, true));
         // 添加用于进行心跳检测的处理器
-//        pipeline.addLast(new IdleStateHandler(0, 0, 0));
-//        pipeline.addLast(new HeartbeatHandler(nettyClient, operationLogService));
+        pipeline.addLast(new IdleStateHandler(0, 0, 0));
+        pipeline.addLast(new HeartbeatHandler(nettyClient, operationLogService));
         // 添加用于根据自定义协议将消息与字节流进行相互转换的处理器
         pipeline.addLast(new MessageEncoder());
         pipeline.addLast(new MessageDecoder());
         // 添加客户端消息处理器
-//        pipeline.addLast(new IdleStateHandler(Integer.valueOf(SysConfigUtil.get(EnumSysConfigType.RegisterTimeOut.getName())), 0, 0));
+        pipeline.addLast(new IdleStateHandler(Integer.valueOf(SysConfigUtil.get(EnumSysConfigType.RegisterTimeOut.getName())), 0, 0));
         MessageResolverInFactory resolverFactory = MessageResolverInFactory.getInstance();
         pipeline.addLast(new ClientMessageHandler(resolverFactory, operationLogService));
         initRosolverFactory(resolverFactory);

@@ -88,7 +88,7 @@ public class PatrolTask implements ITask {
             Long execId = 0L;
             PatrolTaskEntity patrolTask = patrolTaskService.getById(busiId);
             //任务开始执行
-            this.saveOperationLog(robotList.get(0).getRobotInfoId(), jobId, String.format(SysLogConstant.ROBOT_PATROL_TASK_START, "巡检任务", jobId), null, patrolTask.getPatrolTaskCode());
+            this.saveOperationLog(robotList.get(0).getRobotInfoId(), busiId, String.format(SysLogConstant.ROBOT_PATROL_TASK_START, "巡检任务", jobId), null, patrolTask.getPatrolTaskCode());
             //设置任务实际执行时间
             patrolTask.setRealBeginTime(new Date(System.currentTimeMillis()));
             patrolTaskService.saveOrUpdate(patrolTask);
@@ -137,7 +137,7 @@ public class PatrolTask implements ITask {
                 this.patrolResultData(result.getPatrolTaskResultId());
                 //添加操作日志
                 this.saveOperationLog(robotList.get(0).getRobotInfoId(),
-                        jobId,
+                        busiId,
                         String.format(SysLogConstant.ROBOT_PATROL_TASK_ING, "巡检任务", robotCode, scene.getDeviceName()),
                         scene.getDeviceId(),
                         patrolTask.getPatrolTaskCode());
@@ -155,7 +155,7 @@ public class PatrolTask implements ITask {
             this.updateRobotStatus(robotCode,1, EnumRobotComplusStatusDataType.YunXingZhuangTai_KongXian);
             //任务结束，返回巡视结果
             this.patrolResultData(execId);
-            this.saveOperationLog(robotList.get(0).getRobotInfoId(), jobId, String.format(SysLogConstant.ROBOT_PATROL_TASK_START, "巡检任务", jobId), null,patrolTask.getPatrolTaskCode());
+            this.saveOperationLog(robotList.get(0).getRobotInfoId(), busiId, String.format(SysLogConstant.ROBOT_PATROL_TASK_START, "巡检任务", jobId), null,patrolTask.getPatrolTaskCode());
         }else{
             //TODO
             log.info("当前没有空闲机器人");
@@ -165,17 +165,17 @@ public class PatrolTask implements ITask {
     /**
      * 添加任务执行日志
      * @param robotId
-     * @param jobId
+     * @param busiId
      * @param logContent
      * @param deviceId
      * @param taskCode
      */
     @Override
-    public void saveOperationLog(Long robotId, Long jobId, String logContent, String deviceId, String taskCode) {
+    public void saveOperationLog(Long robotId, Long busiId, String logContent, String deviceId, String taskCode) {
         OperationLogEntity log = new OperationLogEntity();
         log.setLogType(NettyConstants.PATROL_TASK);
         log.setRobotId(robotId);
-        log.setJobId(jobId);
+        log.setJobId(busiId);
         log.setLogContent(logContent);
         log.setDeviceId(deviceId);
         log.setOperationTime(System.currentTimeMillis());

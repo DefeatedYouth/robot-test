@@ -11,6 +11,7 @@ package com.robot.host.quartz.dao;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.robot.host.quartz.entry.ScheduleJobEntity;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.Map;
 
@@ -26,4 +27,6 @@ public interface ScheduleJobDao extends BaseMapper<ScheduleJobEntity> {
 	 * 批量更新状态
 	 */
 	int updateBatch(Map<String, Object> map);
+
+	String getJobByParam(@Param("taskId") Long patrolTaskId);
 }

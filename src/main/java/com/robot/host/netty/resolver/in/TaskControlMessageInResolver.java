@@ -1,14 +1,15 @@
 package com.robot.host.netty.resolver.in;
 
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.robot.host.base.service.OperationLogService;
-import com.robot.host.common.constants.EnumRobotTaskControlType;
-import com.robot.host.common.constants.NettyConstants;
-import com.robot.host.common.constants.ProtocolMessage;
-import com.robot.host.common.constants.SysLogConstant;
+import com.robot.host.common.constants.*;
+import com.robot.host.common.dto.MessageAboutRobotDTO;
 import com.robot.host.common.dto.MessageJudgeInDTO;
+import com.robot.host.common.dto.PatrolTaskStatusDTO;
 import com.robot.host.common.dto.XmlInRobotTaskControlDTO;
 import com.robot.host.base.entry.PatrolTaskEntity;
+import com.robot.host.common.util.MessageUtil;
 import com.robot.host.quartz.constants.JobConstants;
 import com.robot.host.quartz.entry.ScheduleJobEntity;
 import com.robot.host.quartz.service.ScheduleJobService;
@@ -78,6 +79,9 @@ public class TaskControlMessageInResolver implements InResolver {
                     null,null,null,className());
         }
 
+        //返回任务状态
+        this.sendTaskStatus(patrolTask);
+
 
         //返回响应信息
         ProtocolMessage respMsg = new ProtocolMessage();
@@ -91,6 +95,19 @@ public class TaskControlMessageInResolver implements InResolver {
         future.addListener((ChannelFutureListener) channelFuture ->
                 log.info("[任务控制]响应信息：{}",jsonMsg));
         return respMsg;
+    }
+
+    private void sendTaskStatus(PatrolTaskEntity patrolTask) {
+        //推送任务状态
+        PatrolTaskStatusDTO taskStatusDTO = new PatrolTaskStatusDTO();
+        taskStatusDTO.setTaskCode(patrolTask.getPatrolTaskCode());
+        String taskStatusMsg = JSONUtil.toJsonStr(taskStatusDTO);
+
+        MessageAboutRobotDTO messageAboutRobotDTO = new MessageAboutRobotDTO();
+        messageAboutRobotDTO.setMsgType(EnumSendToRobotMsgType.PATROL_TASK_STATUS);
+        messageAboutRobotDTO.setMsgBody(taskStatusMsg);
+        String jsonStr = JSONUtil.toJsonStr(messageAboutRobotDTO);
+        MessageUtil.sendMessage(jsonStr);
     }
 
     @Override

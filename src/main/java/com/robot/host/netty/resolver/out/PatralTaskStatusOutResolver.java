@@ -2,6 +2,7 @@ package com.robot.host.netty.resolver.out;
 
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.robot.host.base.entry.OperationLogEntity;
 import com.robot.host.base.service.OperationLogService;
 import com.robot.host.common.constants.EnumSendToRobotMsgType;
 import com.robot.host.common.constants.NettyConstants;
@@ -15,9 +16,12 @@ import com.robot.host.base.service.PatrolTaskExecService;
 import com.robot.host.base.service.PatrolTaskService;
 import com.robot.host.common.util.RobotDateUtil;
 import com.robot.host.common.util.XmlBeanUtils;
+import com.robot.host.quartz.dao.ScheduleJobDao;
 import lombok.extern.slf4j.Slf4j;
+import org.testng.collections.Lists;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * 任务状态数据
@@ -31,11 +35,14 @@ public class PatralTaskStatusOutResolver extends CommonOutResolver {
 
     private OperationLogService operationLogService;
 
-    public PatralTaskStatusOutResolver(PatrolTaskService patrolTaskService, PatrolTaskExecService patrolTaskExecService, OperationLogService operationLogService) {
+    private ScheduleJobDao scheduleJobDao;
+
+    public PatralTaskStatusOutResolver(PatrolTaskService patrolTaskService, PatrolTaskExecService patrolTaskExecService, OperationLogService operationLogService, ScheduleJobDao scheduleJobDao) {
         super(operationLogService);
         this.operationLogService = operationLogService;
         this.patrolTaskService = patrolTaskService;
         this.patrolTaskExecService = patrolTaskExecService;
+        this.scheduleJobDao = scheduleJobDao;
     }
 
     @Override
@@ -84,7 +91,15 @@ public class PatralTaskStatusOutResolver extends CommonOutResolver {
         item.setPlanStartTime(patrolTask.getTaskBeginTime() + "");
         item.setStartTime(patrolTask.getRealBeginTime() + "");
         //任务进度
-        BigDecimal taskProgress = RobotDateUtil.countTaskProgress(patrolTask.getRealBeginTime(), patrolTask.getTaskEndTime());
+        BigDecimal taskProgress = null;
+        if(patrolTask.getPatrolRuleType() == 3){
+            taskProgress = RobotDateUtil.countTaskProgress(patrolTask.getRealBeginTime(), patrolTask.getTaskEndTime());
+        }else{
+            String[] devices = scheduleJobDao.getJobByParam(patrolTask.getPatrolTaskId()).split(",");
+            List<OperationLogEntity> list = operationLogService.list(new QueryWrapper<OperationLogEntity>().lambda().eq(OperationLogEntity::getJobId, patrolTask.getPatrolTaskId()).orderByDesc(OperationLogEntity::getOperationTime));
+            OperationLogEntity log = list.isEmpty() ? null : list.get(0);
+            taskProgress = log == null ? new BigDecimal(0) : new BigDecimal(devices.length).divide(new BigDecimal(Lists.newArrayList(devices).indexOf(log.getDeviceId()))).multiply(new BigDecimal(100)).setScale(0,BigDecimal.ROUND_HALF_UP);
+        }
         item.setTaskProgress(taskProgress == null ? null : taskProgress + "%");
         item.setDescription(patrolTaskStatusDTO.getDescription());
         String taskStatusMsg = XmlBeanUtils.beanToXml(patralTaskStatusVO, XmlOutRobotPatralTaskStatusDTO.class);

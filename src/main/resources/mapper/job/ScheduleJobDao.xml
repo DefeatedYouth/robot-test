@@ -11,4 +11,8 @@
 		</foreach>
 	</update>
 
+	<select id="getJobByParam" resultType="java.lang.String">
+		select json_extract(params, '$.deviceList') from schedule_job where json_extract(params, '$.busiId') = #{taskId}
+	</select>
+
 </mapper>

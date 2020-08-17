@@ -81,20 +81,24 @@ public class PatrolTaskIssueMessageInResolver implements InResolver {
             if(StringUtils.isNotBlank(fixedStartTime)){//       定时任务
                 flag = true;
                 patrolTaskEntity.setFixedTime(fixedStartTime);
+                patrolTaskEntity.setPatrolRuleType(2);
                 patrolTaskEntity.setPeriodType(EnumTaskPeriodType.TIMEDTASK.getValue());
             }else if(StringUtils.isNotBlank(cycleMonth)){//     月
+                patrolTaskEntity.setPatrolRuleType(3);
                 patrolTaskEntity.setTaskBeginTime(sdf.parse(item.getCycleStartTime()));
                 patrolTaskEntity.setTaskEndTime(sdf.parse(item.getCycleEndTime()));
                 patrolTaskEntity.setPeriodType(EnumTaskPeriodType.MONTH.getValue());
                 patrolTaskEntity.setPeriodVal(item.getCycleMonth());
                 patrolTaskEntity.setPeriodExecuteTime(item.getCycleExecuteTime());
             }else if(StringUtils.isNotBlank(cycleWeek)){//      周
+                patrolTaskEntity.setPatrolRuleType(3);
                 patrolTaskEntity.setTaskBeginTime(sdf.parse(item.getCycleStartTime()));
                 patrolTaskEntity.setTaskEndTime(sdf.parse(item.getCycleEndTime()));
                 patrolTaskEntity.setPeriodType(EnumTaskPeriodType.WEEK.getValue());
                 patrolTaskEntity.setPeriodVal(item.getCycleWeek());
                 patrolTaskEntity.setPeriodExecuteTime(item.getCycleExecuteTime());
             }else if(StringUtils.isNotBlank(intervalNumber)){//     天、小时
+                patrolTaskEntity.setPatrolRuleType(3);
                 patrolTaskEntity.setTaskBeginTime(sdf.parse(item.getIntervalStartTime()));
                 patrolTaskEntity.setTaskEndTime(sdf.parse(item.getIntervalEndTime()));
                 patrolTaskEntity.setPeriodType(Integer.valueOf(item.getIntervalType()));
@@ -103,6 +107,7 @@ public class PatrolTaskIssueMessageInResolver implements InResolver {
             }else{
                 //TODO  立即执行任务
                 flag = true;
+                patrolTaskEntity.setPatrolRuleType(1);
                 patrolTaskEntity.setFixedTime(DateUtil.format(DateUtils.addSeconds(new Date(), 10), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")));
                 patrolTaskEntity.setPeriodType(EnumTaskPeriodType.EXEC.getValue());
             }

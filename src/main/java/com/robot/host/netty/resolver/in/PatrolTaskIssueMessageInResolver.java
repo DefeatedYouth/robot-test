@@ -73,6 +73,7 @@ public class PatrolTaskIssueMessageInResolver implements InResolver {
             patrolTaskEntity.setPatrolTaskCode(item.getTaskCode());
             patrolTaskEntity.setPatrolTaskName(item.getTaskName());
             patrolTaskEntity.setPriority(Integer.valueOf(item.getPriority()));
+            patrolTaskEntity.setSiteId(xmlOutRobotPatralTaskDownDTO.getCode());
 
             String fixedStartTime = item.getFixedStartTime();
             String cycleMonth = item.getCycleMonth();
@@ -117,6 +118,9 @@ public class PatrolTaskIssueMessageInResolver implements InResolver {
             //TODO 添加任务    将周期任务拆分成单个子任务
             this.insertBatchSchedule(flag, patrolTaskEntity, item);
 
+            //添加任务表
+//            patrolTaskService.save(patrolTaskEntity);
+
             //成功响应
             BaseXmlDTO taskIssueDTO = new BaseXmlDTO();
             taskIssueDTO.setSendCode(NettyConstants.ROBOT_HOST_CODE);
@@ -148,7 +152,7 @@ public class PatrolTaskIssueMessageInResolver implements InResolver {
      * @param patrolTaskEntity
      * @param item
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void insertBatchSchedule(boolean flag, PatrolTaskEntity patrolTaskEntity, XmlOutRobotPatralTaskDownDTO.Item item) {
         try {
             if(flag){//定时任务、立即执行任务
@@ -179,6 +183,10 @@ public class PatrolTaskIssueMessageInResolver implements InResolver {
                     String execTime = DateUtil.format(DateUtils.addDays(beginTime, i), sdf);
                     Calendar calendar = Calendar.getInstance();
                     calendar.setTime(sdf.parse(execTime));
+                    //周期任务  当任务周期小于当前时间则不创建
+                    if(!calendar.before(new Date())){
+                        continue;
+                    }
                     Integer isFlag = 0;
                     if(patrolTaskEntity.getPeriodType().equals(EnumTaskPeriodType.MONTH.getValue())){
                         isFlag = calendar.get(Calendar.DAY_OF_MONTH);
@@ -216,7 +224,7 @@ public class PatrolTaskIssueMessageInResolver implements InResolver {
      * @param endTime
      * @return
      */
-    private int getTimeDifference(Date beginTime, Date endTime) {
+    public int getTimeDifference(Date beginTime, Date endTime) {
         int day = 1000 * 60 * 60 * 24;
 //        Calendar startCal = Calendar.getInstance();
 //        Calendar endCal = Calendar.getInstance();
@@ -233,7 +241,8 @@ public class PatrolTaskIssueMessageInResolver implements InResolver {
      * 添加系统日志
      * @param logContent
      */
-    private void saveLog(String logContent){
+    @Transactional(rollbackFor = Exception.class)
+    public void saveLog(String logContent){
         operationLogService.saveSysLogThenSendWebSocket(SysLogConstant.ROBOT_OTHER,
                 SysLogConstant.SYS_LOCAL_STATUS,
                 logContent,

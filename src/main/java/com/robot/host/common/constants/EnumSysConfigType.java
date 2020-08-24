@@ -14,7 +14,8 @@ public enum EnumSysConfigType {
     CoordinateUnitLength("coordinateUnitLength", Long.class, null),
     DeviceFile("deviceFile",String.class, null),
     RobotFile("robotFile", String.class, null),
-    ResultFile("resultFile", String.class, null)
+    ResultFile("resultFile", String.class, null),
+    SiteCode("siteCode", String.class, null)
     ;
 
 

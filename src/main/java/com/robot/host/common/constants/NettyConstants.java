@@ -2,9 +2,15 @@ package com.robot.host.common.constants;
 
 import com.google.common.collect.Sets;
 
+import java.text.SimpleDateFormat;
 import java.util.Set;
 
 public interface NettyConstants {
+
+    //文件时间格  年月日时分秒
+    SimpleDateFormat fileDateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+
+
     int SESSION_ID_LENGTH = 8;
     byte[] magicNumber = new byte[]{(byte) 0xEB, (byte) 0x90};
 

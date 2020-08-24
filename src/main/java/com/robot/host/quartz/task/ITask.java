@@ -19,6 +19,6 @@ public interface ITask {
      * @param taskId
      * @param logContent
      */
-    void saveOperationLog(Long robotId, Long taskId, String logContent, String deviceId, String taskCode);
+    void saveOperationLog(Long robotId, Long taskId, String logContent, String deviceId);
 
 }

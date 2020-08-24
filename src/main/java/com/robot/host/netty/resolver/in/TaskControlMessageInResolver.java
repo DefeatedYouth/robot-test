@@ -51,6 +51,7 @@ public class TaskControlMessageInResolver implements InResolver {
 
     @Override
     public ProtocolMessage resolve(ProtocolMessage message, ChannelHandlerContext ctx) {
+        Boolean flag = false;
         XmlInRobotTaskControlDTO taskControl = XmlBeanUtils.xmlToBean(message.getBody(), XmlInRobotTaskControlDTO.class);
         // 获取 ScheduleJob
         PatrolTaskEntity patrolTask = patrolTaskService.getOne(new QueryWrapper<PatrolTaskEntity>().lambda().eq(PatrolTaskEntity::getPatrolTaskCode, taskControl.getCode()));
@@ -72,11 +73,17 @@ public class TaskControlMessageInResolver implements InResolver {
             }else if (EnumRobotTaskControlType.STOP.getCommand() == Integer.valueOf(taskControl.getCommand())){
                 //任务停止
                 scheduleJobService.deleteBatch(new Long[]{jobId});
+                flag = true;
             }
             operationLogService.saveSysLogThenSendWebSocket(SysLogConstant.ROBOT_OTHER,
                     SysLogConstant.SYS_LOCAL_STATUS,
                     String.format("[%s]正在修改任务状态，jobid：%s，任务状态：%s", operationName(), jobId, EnumRobotTaskControlType.getEnum(taskControl.getCode() + "-" + taskControl.getCommand())),
                     null,null,null,className());
+        }
+
+        //删除定时任务（子任务）时同时删除巡检任务（主任务）
+        if(flag){
+            patrolTaskService.removeById(patrolTask.getPatrolTaskId());
         }
 
         //返回任务状态

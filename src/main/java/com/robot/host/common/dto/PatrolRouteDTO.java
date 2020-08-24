@@ -1,5 +1,6 @@
 package com.robot.host.common.dto;
 
+import com.robot.host.base.entry.PatrolTaskEntity;
 import io.swagger.annotations.ApiModel;
 import lombok.Data;
 
@@ -11,5 +12,7 @@ public class PatrolRouteDTO {
 
 
     private String sceneIds;
+
+    private PatrolTaskEntity patrolTaskEntity;//设置文件路径
 
 }

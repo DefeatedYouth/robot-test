@@ -30,9 +30,9 @@ import java.util.concurrent.TimeUnit;
 public class NettyClient  {
     private static EventLoopGroup group = new NioEventLoopGroup();
     @Value("${netty.port}")
-    private static int port=10011;
+    private int port;
     @Value("${netty.host}")
-    private static  String host="127.0.0.1";
+    private String host;
 
     private static SocketChannel socketChannel;
 
@@ -91,9 +91,9 @@ public class NettyClient  {
         //客户端断线重连逻辑
         future.addListener((ChannelFutureListener) future1 -> {
             if (future1.isSuccess()) {
-                log.info("连接Netty服务端成功");
+                log.info("连接Netty服务端成功：" + host + ":" + port);
             } else {
-                log.info("连接失败，进行断线重连");
+                log.info("连接失败，进行断线重连：" + host + ":" + port);
                 future1.channel().eventLoop().schedule(() -> start(), 15, TimeUnit.SECONDS);
             }
         });

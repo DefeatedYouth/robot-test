@@ -11,8 +11,8 @@ public class SiteBaseEntity extends BaseEntity implements Serializable {
      * 部门id
      */
 
-    @ApiModelProperty(value = "变电站id", dataType = "Long")
-    private Long siteId;
+    @ApiModelProperty(value = "变电站id", dataType = "String")
+    private String siteId;
 
     public SiteBaseEntity() {
     }

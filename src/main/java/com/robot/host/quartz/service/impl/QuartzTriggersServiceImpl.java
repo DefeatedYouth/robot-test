@@ -63,16 +63,16 @@ public class QuartzTriggersServiceImpl extends ServiceImpl<QuartzTriggersMapper,
     public Result<SchedulerJobVO> getTaskStatusByTaskId(String  taskCode) {
         operationLogService.saveSysLogThenSendWebSocket(SysLogConstant.ROBOT_OTHER,
                 SysLogConstant.SYS_LOCAL_STATUS,
-                "获取任务执行状况，taskCode为：" + taskCode,
+                "获取任务执行状况，巡检任务id为：" + taskCode,
                 null, null, null, this.getClass().getCanonicalName());
         SchedulerJobVO resultVO = new SchedulerJobVO();
         // 根据taskcode获取task
-        PatrolTaskEntity patrolTask = patrolTaskService.getOne(new QueryWrapper<PatrolTaskEntity>().lambda().eq(PatrolTaskEntity::getPatrolTaskCode, taskCode));
+        PatrolTaskEntity patrolTask = patrolTaskService.getOne(new QueryWrapper<PatrolTaskEntity>().lambda().eq(PatrolTaskEntity::getPatrolTaskId, Long.valueOf(taskCode)));
         resultVO.setPatrolTaskEntity(patrolTask);
         //根据taskid获取所有子任务
         List<ScheduleJobEntity> jobs = quartzTriggersMapper.selectJobByPatrolId(patrolTask.getPatrolTaskId());
 
-        List<Long> jobIds = jobs.stream().map(ScheduleJobEntity::getJobId).collect(Collectors.toList());
+//        List<Long> jobIds = jobs.stream().map(ScheduleJobEntity::getJobId).collect(Collectors.toList());
 
         List<String> taskNames = jobs.stream().map(job -> {
             return TASK_NAME + job.getJobId();
@@ -100,7 +100,7 @@ public class QuartzTriggersServiceImpl extends ServiceImpl<QuartzTriggersMapper,
         //获取任务执行日志
 //        String cron = schedule.getCronExpression();
 //        String[] crons = cron.split(" ");
-        List<OperationLogEntity> logs = operationLogService.list(new QueryWrapper<OperationLogEntity>().lambda().in(OperationLogEntity::getJobId,jobIds).orderByDesc(OperationLogEntity::getOperationTime));
+        List<OperationLogEntity> logs = operationLogService.list(new QueryWrapper<OperationLogEntity>().lambda().eq(OperationLogEntity::getJobId,Long.valueOf(taskCode)).orderByDesc(OperationLogEntity::getOperationTime));
         if(!logs.isEmpty()){
 //            if(crons.length == 7){
             String deviceId = logs.get(0).getDeviceId();

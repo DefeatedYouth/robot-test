@@ -52,7 +52,7 @@ public class DeviceInfoEntry implements Serializable {
     private String deviceInfo;
     private String posX;
     private String posY;
-
+    @ExcelProperty(value = "设备类型名称", index = 13)
     public String deviceTypeItemName;
 
 }

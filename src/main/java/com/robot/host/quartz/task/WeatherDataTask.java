@@ -62,7 +62,7 @@ public class WeatherDataTask implements ITask{
         //任务开始执行
         JSONObject paramObj = JSONUtil.parseObj(params);
         Long jobId = Long.valueOf((Integer) paramObj.get("jobId"));
-        this.saveOperationLog(null, jobId, String.format(SysLogConstant.ROBOT_PATROL_TASK_START, "微气象数据", jobId), null, null);
+        this.saveOperationLog(null, jobId, String.format(SysLogConstant.ROBOT_PATROL_TASK_START, "微气象数据", jobId), null);
 
         String currentDate = CommonOutResolver.sdf.format(System.currentTimeMillis());
 
@@ -119,7 +119,7 @@ public class WeatherDataTask implements ITask{
         String weatherDataMsg = JSONUtil.toJsonStr(weatherDataVO);
         MessageUtil.sendMessage(weatherDataMsg);
 
-        this.saveOperationLog(null, jobId, String.format(SysLogConstant.ROBOT_PATROL_TASK_END, "微气象数据", jobId), null, null);
+        this.saveOperationLog(null, jobId, String.format(SysLogConstant.ROBOT_PATROL_TASK_END, "微气象数据", jobId), null);
 
         log.info("[机器人主机]推送微气象数据结束");
     }
@@ -132,7 +132,7 @@ public class WeatherDataTask implements ITask{
      * @param logContent
      */
     @Override
-    public void saveOperationLog(Long robotId, Long jobId, String logContent, String deviceId, String taskCode) {
+    public void saveOperationLog(Long robotId, Long jobId, String logContent, String deviceId) {
         operationLogService.saveSysLogThenSendWebSocket(SysLogConstant.ROBOT_PATROL_TASK,//日志类型:任务
                 SysLogConstant.SYS_LOCAL_STATUS,//日志状态:本地
                 logContent,//日志内容

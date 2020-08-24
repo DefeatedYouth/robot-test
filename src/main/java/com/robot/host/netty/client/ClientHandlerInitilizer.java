@@ -96,7 +96,7 @@ public class ClientHandlerInitilizer extends ChannelInitializer<Channel> {
 
     public void initRosolverFactory(MessageResolverInFactory resolverFactory) {
         resolverFactory.registerResolver(new RobotOperationMessageInResolver(robotInfoService, operationLogService, messagingTemplate));
-        resolverFactory.registerResolver(new ModelSyncMessageInResolver(robotFileService));
+        resolverFactory.registerResolver(new ModelSyncMessageInResolver(robotFileService, sysConfigService));
         resolverFactory.registerResolver(new NoItemsResponseMessageInResolver());
         resolverFactory.registerResolver(new PatrolTaskIssueMessageInResolver(patrolTaskService, scheduleJobService,operationLogService));
         resolverFactory.registerResolver(new TaskControlMessageInResolver(scheduleJobService, patrolTaskService, operationLogService));

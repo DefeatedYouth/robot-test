@@ -63,7 +63,7 @@ public class RunDataTask implements ITask {
         //任务开始执行
         JSONObject paramObj = JSONUtil.parseObj(params);
         Long jobId = Long.valueOf((Integer) paramObj.get("jobId"));
-        this.saveOperationLog(null, jobId, String.format(SysLogConstant.ROBOT_PATROL_TASK_START, "运行数据", jobId), null, null);
+        this.saveOperationLog(null, jobId, String.format(SysLogConstant.ROBOT_PATROL_TASK_START, "运行数据", jobId), null);
 
 
         String currentDate = CommonOutResolver.sdf.format(System.currentTimeMillis());
@@ -118,7 +118,7 @@ public class RunDataTask implements ITask {
         runDataVO.setMsgBody(jsonStr);
         String runDataMsg = JSONUtil.toJsonStr(runDataVO);
         MessageUtil.sendMessage(runDataMsg);
-        this.saveOperationLog(null, jobId, String.format(SysLogConstant.ROBOT_PATROL_TASK_END, "运行数据", jobId), null, null);
+        this.saveOperationLog(null, jobId, String.format(SysLogConstant.ROBOT_PATROL_TASK_END, "运行数据", jobId), null);
         log.info("[机器人主机]推送运行数据结束");
     }
 
@@ -130,7 +130,7 @@ public class RunDataTask implements ITask {
      * @param logContent
      */
     @Override
-    public void saveOperationLog(Long robotId, Long jobId, String logContent, String deviceId, String taskCode) {
+    public void saveOperationLog(Long robotId, Long jobId, String logContent, String deviceId) {
         operationLogService.saveSysLogThenSendWebSocket(SysLogConstant.ROBOT_PATROL_TASK,//日志类型:任务
                 SysLogConstant.SYS_LOCAL_STATUS,//日志状态:输出
                 logContent,//日志内容

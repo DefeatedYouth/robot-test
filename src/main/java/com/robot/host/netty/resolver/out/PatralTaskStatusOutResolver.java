@@ -71,7 +71,7 @@ public class PatralTaskStatusOutResolver extends CommonOutResolver {
 
         PatrolTaskStatusDTO patrolTaskStatusDTO = JSONUtil.toBean(busiMessage.getMsgBody(), PatrolTaskStatusDTO.class);
 
-        PatrolTaskEntity patrolTask = patrolTaskService.getOne(new QueryWrapper<PatrolTaskEntity>().lambda().eq(PatrolTaskEntity::getPatrolTaskCode, patrolTaskStatusDTO.getTaskCode()));
+        PatrolTaskEntity patrolTask = patrolTaskService.getOne(new QueryWrapper<PatrolTaskEntity>().lambda().eq(PatrolTaskEntity::getPatrolTaskId, patrolTaskStatusDTO.getTaskPatrolledId()));
 //        PatrolTaskExecEntity patrolTaskExec = patrolTaskExecService.getOne(new QueryWrapper<PatrolTaskExecEntity>().lambda().eq(PatrolTaskExecEntity::getPatrolTaskCode, patrolTask.getPatrolTaskCode()));
 
         //封装XML

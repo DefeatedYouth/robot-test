@@ -131,6 +131,7 @@ public class FTPRobotUtils {
             flag = true;
             log.debug("上传文件成功");
         } catch (Exception e) {
+            flag = false;
             log.debug("上传文件失败");
             e.printStackTrace();
         } finally {
@@ -149,7 +150,7 @@ public class FTPRobotUtils {
                 }
             }
         }
-        return true;
+        return flag;
     }
 
     //判断ftp服务器文件是否存在

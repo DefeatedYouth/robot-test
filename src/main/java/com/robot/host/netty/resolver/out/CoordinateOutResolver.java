@@ -2,8 +2,10 @@ package com.robot.host.netty.resolver.out;
 
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.robot.host.base.entry.SysConfig;
 import com.robot.host.base.service.OperationLogService;
 import com.robot.host.common.constants.EnumSendToRobotMsgType;
+import com.robot.host.common.constants.EnumSysConfigType;
 import com.robot.host.common.constants.NettyConstants;
 import com.robot.host.common.constants.ProtocolMessage;
 import com.robot.host.common.dto.MessageAboutRobotDTO;
@@ -11,10 +13,13 @@ import com.robot.host.common.dto.RobotCoordinateDTO;
 import com.robot.host.common.dto.XmlOutRobotCoordinateDTO;
 import com.robot.host.base.entry.RobotInfoEntity;
 import com.robot.host.base.service.RobotInfoService;
+import com.robot.host.common.util.FTPRobotUtils;
+import com.robot.host.common.util.SysConfigUtil;
 import com.robot.host.common.util.XmlBeanUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.testng.collections.Lists;
 
+import java.io.InputStream;
 import java.util.Date;
 import java.util.List;
 
@@ -25,10 +30,13 @@ public class CoordinateOutResolver extends CommonOutResolver {
 
     private OperationLogService operationLogService;
 
-    public CoordinateOutResolver(RobotInfoService robotInfoService, OperationLogService operationLogService) {
+    private FTPRobotUtils ftpRobotUtils;
+
+    public CoordinateOutResolver(RobotInfoService robotInfoService, OperationLogService operationLogService, FTPRobotUtils ftpRobotUtils) {
         super(operationLogService);
         this.operationLogService = operationLogService;
         this.robotInfoService = robotInfoService;
+        this.ftpRobotUtils = ftpRobotUtils;
     }
 
     @Override
@@ -70,7 +78,7 @@ public class CoordinateOutResolver extends CommonOutResolver {
         XmlOutRobotCoordinateDTO.Item item = new XmlOutRobotCoordinateDTO.Item();
         item.setRobotName(robotInfo.getName());
         //TODO: 文件名称
-        item.setFilePath("");
+        item.setFilePath(this.getMapFilePath(robotInfo));
         item.setRobotCode(robotInfo.getCode());
         //当前时间
         item.setTime(sdf.format(new Date()));
@@ -84,5 +92,15 @@ public class CoordinateOutResolver extends CommonOutResolver {
         //TODO 设置sessionId
         protocol.setSessionId(0);
         return protocol;
+    }
+
+    private String getMapFilePath(RobotInfoEntity robotInfo) {
+        //获取变电站编码
+        String siteCode = SysConfigUtil.get(EnumSysConfigType.SiteCode.getName());
+        String mapFile = siteCode + "/Map";
+        String fileName = robotInfo.getCode() + "_1.jpg";
+        InputStream is = this.getClass().getClassLoader().getResourceAsStream("banner.jpg");
+        ftpRobotUtils.uploadFile(mapFile, fileName, is);
+        return mapFile + "/" + fileName;
     }
 }

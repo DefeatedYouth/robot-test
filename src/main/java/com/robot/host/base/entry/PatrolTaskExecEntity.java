@@ -73,8 +73,8 @@ public class PatrolTaskExecEntity implements Serializable {
      * 变电站id
      */
 
-    @ApiModelProperty(value = "变电站id", dataType = "Long")
-    private Long siteId;
+    @ApiModelProperty(value = "变电站id", dataType = "String")
+    private String siteId;
     /**
      * 执行时间
      */

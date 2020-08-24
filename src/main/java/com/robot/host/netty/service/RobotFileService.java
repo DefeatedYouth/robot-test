@@ -15,7 +15,6 @@ import com.robot.host.common.util.XmlBeanUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.testng.collections.Lists;
 
@@ -42,9 +41,10 @@ public class RobotFileService {
     /**
      * 上传设备文件
      * @return  设备文件路径
+     * @param code
      */
-    public String uploadDeviceFile(){
-        String deviceFile = SysConfigUtil.get(EnumSysConfigType.DeviceFile.getName());
+    public String uploadDeviceFile(String code){
+        String deviceFile = code + "/Model/device_model_10.xml";
         OutputStream out = null;
         InputStream in = null;
         try {
@@ -66,6 +66,7 @@ public class RobotFileService {
                 model.setRecognitionTypeList(device.getRecognitionTypeList());
                 model.setPhase(device.getPhase() + "");
                 model.setDeviceInfo(device.getDeviceInfo());
+                model.setDeviceTypeItemName(device.getDeviceTypeItemName());
                 models.add(model);
             });
             modelVO.setModelList(models);
@@ -101,8 +102,8 @@ public class RobotFileService {
      * 上传机器人文件
      * @return
      */
-    public String uploadRobotFile(){
-        String robotFile = SysConfigUtil.get(EnumSysConfigType.RobotFile.getName());
+    public String uploadRobotFile(String code){
+        String robotFile = code + "/Model/robot_model_10_1.xml";
         OutputStream out = null;
         InputStream in = null;
         try {

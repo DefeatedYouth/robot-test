@@ -3,6 +3,7 @@ package com.robot.host.netty.resolver.out;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.robot.host.base.entry.DeviceInfoEntry;
+import com.robot.host.base.entry.PatrolTaskEntity;
 import com.robot.host.base.service.DeviceInfoService;
 import com.robot.host.base.service.OperationLogService;
 import com.robot.host.common.constants.EnumSendToRobotMsgType;
@@ -15,9 +16,13 @@ import com.robot.host.base.entry.RobotInfoEntity;
 import com.robot.host.base.entry.SceneInfoEntity;
 import com.robot.host.base.service.RobotInfoService;
 import com.robot.host.base.service.SceneInfoService;
+import com.robot.host.common.util.FTPRobotUtils;
 import com.robot.host.common.util.XmlBeanUtils;
 import org.testng.collections.Lists;
 
+import java.io.InputStream;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 public class PatrolRouteOutResolver extends CommonOutResolver {
@@ -30,12 +35,15 @@ public class PatrolRouteOutResolver extends CommonOutResolver {
 
     private OperationLogService operationLogService;
 
-    public PatrolRouteOutResolver(SceneInfoService sceneInfoService, RobotInfoService robotInfoService, DeviceInfoService deviceInfoService, OperationLogService operationLogService) {
+    private FTPRobotUtils ftpRobotUtils;
+
+    public PatrolRouteOutResolver(SceneInfoService sceneInfoService, RobotInfoService robotInfoService, DeviceInfoService deviceInfoService, OperationLogService operationLogService, FTPRobotUtils ftpRobotUtils) {
         super(operationLogService);
         this.operationLogService = operationLogService;
         this.sceneInfoService = sceneInfoService;
         this.robotInfoService = robotInfoService;
         this.deviceInfoService = deviceInfoService;
+        this.ftpRobotUtils = ftpRobotUtils;
     }
 
     @Override
@@ -78,7 +86,7 @@ public class PatrolRouteOutResolver extends CommonOutResolver {
             XmlOutRobotPatrolRouteDTO.Item item = new XmlOutRobotPatrolRouteDTO.Item();
             item.setRobotName(robotInfo.getName());
             item.setRobotCode(robotInfo.getCode());
-            item.setFilePath("");
+            item.setFilePath(this.getRouteFileName(patrolRouteDTO.getPatrolTaskEntity()));
             item.setTime(currentDate);
             item.setCoordinatePixel(device.getPosX() + "," + device.getPosY());
             item.setCoordinateGeography("");
@@ -88,5 +96,25 @@ public class PatrolRouteOutResolver extends CommonOutResolver {
         String patrolRouteMsg = XmlBeanUtils.beanToXml(patrolRouteVO,XmlOutRobotPatrolRouteDTO.class);
         protocol.setBody(patrolRouteMsg);
         return protocol;
+    }
+
+    private String getRouteFileName(PatrolTaskEntity patrolTaskEntity) {
+        Date date = new Date();
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        String siteId = patrolTaskEntity.getSiteId();
+        int year = cal.get(Calendar.YEAR);
+        String month = cal.get(Calendar.MONTH) + 1 > 10 ? cal.get(Calendar.MONTH) + 1 + "" : "0" + (cal.get(Calendar.MONTH) + 1);
+        String day = cal.get(Calendar.DAY_OF_MONTH) > 10 ? cal.get(Calendar.DAY_OF_MONTH) + "" : "0" + cal.get(Calendar.DAY_OF_MONTH);
+        String taskcode = patrolTaskEntity.getPatrolTaskCode();
+        //filePath: 变电站id/年/月/日/巡视任务编码/Road
+        String filePath = siteId + "/" + year + "/" + month + "/" + day + "/" + taskcode + "/Road";
+        String fileName = "10_" + NettyConstants.fileDateFormat.format(date) + ".jpg";
+        InputStream is = this.getClass().getClassLoader().getResourceAsStream("banner.jpg");
+        boolean flag = ftpRobotUtils.uploadFile(filePath, fileName, is);
+        if(!flag){
+            return "文件上传失败";
+        }
+        return filePath + "/" + fileName;
     }
 }

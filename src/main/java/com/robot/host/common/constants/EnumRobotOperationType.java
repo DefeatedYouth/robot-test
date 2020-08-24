@@ -1,6 +1,9 @@
 package com.robot.host.common.constants;
 
-import com.alibaba.fastjson.JSONObject;
+import cn.hutool.json.JSONObject;
+import com.alibaba.fastjson.annotation.JSONType;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -64,8 +67,10 @@ public enum EnumRobotOperationType {
 
     shangyang("3-1", 3, 1, "上仰"),
     xiafu("3-2", 3, 2, "下俯"),
-    shangsheng("3-3", 3, 3, "上升"),
-    xiajiang("3-4", 3, 4, "下降"),
+    yuntai_zuozhuan("3-3", 3, 3, "左转"),
+    yuntai_youzhuan("3-4", 3, 4, "右转"),
+    shangsheng("3-5", 3, 5, "上升"),
+    xiajiang("3-6", 3, 6, "下降"),
     YunTaiTingZhi("3-8", 3, 8, "云台停止"),
     YunTaiFuWei("3-9", 3, 9, "云台复位"),
     YuZhiWeiTiaoZheng("3-7", 3, 7, "预置位调整"),
@@ -165,11 +170,11 @@ public enum EnumRobotOperationType {
 
     @Override
     public String toString() {
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("fullCode", fullCode);
-        jsonObject.put("command", command);
-        jsonObject.put("type", type);
-        jsonObject.put("text", text);
-        return jsonObject.toString();
+        JSONObject object = new JSONObject();
+        object.put("fullCode",fullCode);
+        object.put("command",command);
+        object.put("type",type);
+        object.put("text",text);
+        return object.toString();
     }
 }

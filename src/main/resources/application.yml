@@ -1,13 +1,13 @@
 server:
   port: 8888
 netty:
-  port: 10012
-  host: 127.0.0.1
+  port: 10011
+  host: 192.168.199.142
 spring:
   datasource:
-    url: jdbc:mysql://192.168.21.60:3306/robothost?useUnicode=true&characterEncoding=utf-8&useSSL=false
+    url: jdbc:mysql://127.0.0.1:3306/smart_ele_robot?useUnicode=true&characterEncoding=utf-8&useSSL=false
     username: root
-    password: Aa123456.com
+    password: 12345
     type: com.alibaba.druid.pool.DruidDataSource
     driverClassName: com.mysql.jdbc.Driver
 
@@ -19,7 +19,7 @@ spring:
 
 
 #ftp连接信息
-ftpHost: 192.168.101.226
-ftpPort: 21
-ftpUsername: IntoRobot
-ftpPassword: Aa123456
+ftpHost: 192.168.199.142
+ftpPort: 801
+ftpUsername: ftpuser
+ftpPassword: ftp123

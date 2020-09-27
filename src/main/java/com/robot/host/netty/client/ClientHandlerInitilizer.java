@@ -102,6 +102,7 @@ public class ClientHandlerInitilizer extends ChannelInitializer<Channel> {
         resolverFactory.registerResolver(new TaskControlMessageInResolver(scheduleJobService, patrolTaskService, operationLogService));
         resolverFactory.registerResolver(new ItemResponseMessageInResolver(sysConfigService, scheduleJobService, operationLogService, scheduler));
         resolverFactory.registerResolver(new TaskLinkageMessageInResolver(robotInfoService,operationLogService, deviceInfoService));
+        resolverFactory.registerResolver(new EnableAreaMessageInResolver(deviceInfoService));
 
     }
 }

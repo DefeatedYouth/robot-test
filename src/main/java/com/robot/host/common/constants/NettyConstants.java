@@ -7,7 +7,7 @@ import java.util.Set;
 
 public interface NettyConstants {
 
-    //文件时间格  年月日时分秒
+    //文件时间格  年月日时分秒     巡视任务执行id：任务编码 + 任务执行开始时间(年月日时分秒)
     SimpleDateFormat fileDateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
 
 
@@ -103,6 +103,9 @@ public interface NettyConstants {
 
     int OUT_CODE_MODEL_SYN = 61;//模型同步
     int OUT_CODE_MODEL_SYN_COMMAND = 1;//模型同步-任务配置
+
+    int OUT_CODE_ENABLE = 81;//检修区域
+    int OUT_CODE_ENABLE_COMMAND= 4;//检修区域-检修区域配置
 
 
 

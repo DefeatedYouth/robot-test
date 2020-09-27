@@ -90,6 +90,9 @@ public class XmlOutRobotPatrolResultDTO {
         @XmlAttribute(name = "task_patrolled_id")
         public String taskPatrolledId;
 
+        @XmlAttribute(name = "valid")
+        public String valid;
+
     }
 
     public XmlOutRobotPatrolResultDTO() {

@@ -55,6 +55,8 @@ public class RobotFileService {
                 RobotSynModelXmlDTO.Model model = new RobotSynModelXmlDTO.Model();
                 model.setDeviceId(device.getDeviceId());
                 model.setDeviceName(device.getDeviceName());
+                model.setComponentId(device.getComponentId());
+                model.setComponentName(device.getComponentName());
                 model.setBayId(device.getBayId());
                 model.setBayName(device.getBayName());
                 model.setMainDeviceId(device.getMainDeviceId());
@@ -118,7 +120,7 @@ public class RobotFileService {
                 model.setIstransport(robot.getIstransport() + "");
                 model.setType(robot.getType() + "");
                 model.setMappath(robot.getMappath());
-                model.setRobotInfo(robot.getRobotInfo());
+//                model.setRobotInfo(robot.getRobotInfo());
                 models.add(model);
             });
             robotModelVO.setModelList(models);

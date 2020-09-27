@@ -42,6 +42,10 @@ public class RobotSynModelXmlDTO {
         public String deviceId;//监控场景Id
         @XmlAttribute(name = "device_name")
         public String deviceName;//监控场景名称：监控点名称
+        @XmlAttribute(name = "component_id")
+        public String componentId;
+        @XmlAttribute(name = "component_name")
+        public String componentName;
         @XmlAttribute(name = "bay_id")
         public String bayId;
         @XmlAttribute(name = "bay_name")

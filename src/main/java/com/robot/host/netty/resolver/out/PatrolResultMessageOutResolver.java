@@ -78,6 +78,7 @@ public class PatrolResultMessageOutResolver extends CommonOutResolver {
         item.setFilePath(result.getFilePath());
         item.setRectangle(result.getRectangle());
         item.setTaskPatrolledId(result.getTaskPatrolledId() + "");
+        item.setValid(result.getValid());
         items.add(item);
         patrolResultVO.setItems(items);
 

@@ -119,7 +119,11 @@ public class PatrolTask implements ITask {
 
             //获取任务场景
             List<DeviceInfoEntry> scenes = deviceInfoService.list(new QueryWrapper<DeviceInfoEntry>().lambda().in(DeviceInfoEntry::getDeviceId, Lists.newArrayList(deviceList.split(","))));
-            scenes.forEach(scene -> {
+            for (DeviceInfoEntry scene : scenes) {
+//            scenes.forEach(scene -> {
+                if(scene.getEnable() == 1 && scene.getEndTime().getTime() > System.currentTimeMillis()){
+                    continue;
+                }
                 log.info("{}正在前往：{}",robotName,scene.getDeviceName());
 //                robotInfoService.updateCoordinate(robotCode,scene.getPosX(), scene.getPosY());
                 PatrolTaskResultEntity result = new PatrolTaskResultEntity();
@@ -137,7 +141,7 @@ public class PatrolTask implements ITask {
                 result.setFileType(StringUtils.isBlank(scene.getSaveTypeList())? null : Integer.valueOf(scene.getSaveTypeList()));
                 result.setFilePath(this.getResultFileName(scene.getDeviceId(), robotCode, patrolTask));
                 result.setRectangle("");
-                result.setTaskPatrolledId(execEntity.getPatrolTaskExecId());
+                result.setTaskPatrolledId(busiId + "_" + NettyConstants.fileDateFormat.format(System.currentTimeMillis()));
                 patrolTaskResultService.save(result);
                 this.patrolResultData(result.getPatrolTaskResultId());
                 //添加操作日志
@@ -151,7 +155,9 @@ public class PatrolTask implements ITask {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-            });
+//            });
+            }
+
 
             //修改巡检任务状态
             this.updatePatrolTaskStatus(busiId, patrolTask,PatrolTask.EXECUTED,"任务已执行");

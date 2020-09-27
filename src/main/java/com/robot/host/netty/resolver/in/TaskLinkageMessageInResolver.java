@@ -66,6 +66,7 @@ public class TaskLinkageMessageInResolver implements  InResolver {
         result.setType(NettyConstants.IN_OUT_CODE_SYSTEM_TYPE + "");
         result.setCommand(NettyConstants.OUT_CODE_SYSTEM_TYPE_COMMAND_COMMON_ITEMS + "");
         XmlOutRobotTaskLinkageDTO.Item item = new XmlOutRobotTaskLinkageDTO.Item();
+        item.setTaskPatrolledId(taskLink.getItems().get(0).getTaskCode() + "_" + NettyConstants.fileDateFormat.format(System.currentTimeMillis()));
         List<RobotInfoEntity> robotList = robotInfoService.list(new QueryWrapper<RobotInfoEntity>().lambda().eq(RobotInfoEntity::getStatus, NettyConstants.ROBOT_FAULT));
         if(robotList.isEmpty()){//机器人故障
             result.setCode(NettyConstants.RESPONSE_CODE_ERROR + "");

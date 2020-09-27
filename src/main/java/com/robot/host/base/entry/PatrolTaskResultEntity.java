@@ -40,5 +40,7 @@ public class PatrolTaskResultEntity {
 
     public String rectangle;
 
-    public Long taskPatrolledId;
+    public String taskPatrolledId;
+
+    public String valid;
 }

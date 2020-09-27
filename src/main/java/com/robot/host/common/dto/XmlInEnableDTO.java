@@ -6,8 +6,8 @@ import javax.xml.bind.annotation.*;
 import java.util.List;
 
 /**
- * @description 巡视主机主动向机器人主机下发联动任务，机器人收到请求后，立刻响应请求执行此任
- * 务或回复失败附带失败原因。
+ * @author xiatian
+ * @date 2020/9/22 9:24
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "", propOrder = {
@@ -21,7 +21,8 @@ import java.util.List;
 })
 @XmlRootElement(name = "Robot")
 @Data
-public class XmlOutRobotTaskLinkageDTO {
+public class XmlInEnableDTO {
+
     @XmlElement(name = "SendCode")
     public String sendCode;
     @XmlElement(name = "ReceiveCode")
@@ -36,22 +37,28 @@ public class XmlOutRobotTaskLinkageDTO {
     public String time;
     @XmlElement(name = "Item")
     @XmlElementWrapper(name = "Items")
-    public List<Item> items;
+    public List<XmlInEnableDTO.Item> items;
 
     @Data
     @XmlAccessorType(XmlAccessType.FIELD)
     @XmlType(name = "", propOrder = {
-            "errorCode",
+            "enable",
+            "startTime",
+            "endTime",
+            "deviceLevel",
+            "deviceList"
     })
     public static class Item {
-        @XmlAttribute(name = "error_code")
-        public String errorCode;
+        @XmlAttribute(name = "enable")
+        public Integer enable;
+        @XmlAttribute(name = "start_time")
+        public String startTime;
+        @XmlAttribute(name = "end_time")
+        public String endTime;
+        @XmlAttribute(name = "device_level")
+        public Integer deviceLevel;
+        @XmlAttribute(name = "device_list")
+        public String deviceList;
 
-        @XmlAttribute(name = "task_patrolled_id")
-        public String taskPatrolledId;
-
-    }
-
-    public XmlOutRobotTaskLinkageDTO() {
     }
 }
